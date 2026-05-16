@@ -27,6 +27,10 @@ export function getIncludedCategories(category: string) {
     ]
   }
 
+  if (category === "Skip EGT") {
+    return ["Skip EGT", "Skipless EGT"]
+  }
+
   if (category === "Skipless IGT") {
     return ["Skipless IGT", "R15 Skipless", "R6 Skipless"]
   }

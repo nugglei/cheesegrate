@@ -35,7 +35,7 @@ export const maps = [
   "Autumn Woodlands",
   "Western Bluffs",
   "Winter Cove",
-  "Cavern Of Darkness",
+  "Cavern of Darkness",
   "The Emerald Isle",
   "Melodical Fantasy",
   "Taiga",
