@@ -1,11 +1,13 @@
 import type { Run } from "./types"
 
 import { getAPEntries } from "./ap"
+import { getMapsForCategory } from "./categoryMaps"
+import { getPlacedLeaderboardRuns } from "./placements"
 import { getTotalTimeEntries } from "./totalTime"
 import { getWRCountEntries } from "./wrCount"
 import { formatTime } from "./utils"
 
-export type HoFStat = "ap" | "wr" | "total"
+export type HoFStat = "ap" | "wr" | "aap" | "total"
 
 export type HoFEntry = {
   player: string
@@ -17,11 +19,65 @@ export type HoFEntry = {
     placement?: number
   }[]
 }
-export const hofStatOptions = [
+
+export const hofStatOptions: { value: HoFStat; label: string }[] = [
   { value: "ap", label: "AP" },
   { value: "wr", label: "WR Count" },
+  { value: "aap", label: "AAP" },
   { value: "total", label: "Total Time" },
 ]
+
+function getAAPEntries(runs: Run[], category: string): HoFEntry[] {
+  const categoryMaps = getMapsForCategory(category)
+  const totalMaps = categoryMaps.length
+  const playerMap = new Map<string, HoFEntry>()
+
+  categoryMaps.forEach((map) => {
+    const leaderboard = getPlacedLeaderboardRuns(runs, map, category)
+
+    leaderboard.forEach(({ run, placement }) => {
+      const player = run.player.trim()
+
+      const current = playerMap.get(player) ?? {
+        player,
+        value: 0,
+        mapSet: new Set<string>(),
+        records: [],
+      }
+
+      if (!current.mapSet.has(map)) {
+        current.mapSet.add(map)
+        current.records.push({
+          map,
+          time: run.time,
+          placement,
+        })
+      }
+
+      playerMap.set(player, current)
+    })
+  })
+
+  return [...playerMap.values()]
+    .filter((entry) => entry.mapSet.size > 0)
+    .map((entry) => {
+      const mapsSubmitted = entry.mapSet.size
+
+      const totalPlacement = entry.records.reduce(
+        (sum, record) => sum + (record.placement ?? 0),
+        0
+      )
+
+      const ap = totalPlacement / mapsSubmitted
+      const aap = (ap * totalMaps) / mapsSubmitted
+
+      return {
+        ...entry,
+        value: aap,
+      }
+    })
+    .sort((a, b) => a.value - b.value || a.player.localeCompare(b.player))
+}
 
 export function getHoFEntries(
   runs: Run[],
@@ -36,6 +92,10 @@ export function getHoFEntries(
     return getAPEntries(runs, category)
   }
 
+  if (stat === "aap") {
+    return getAAPEntries(runs, category)
+  }
+
   return getTotalTimeEntries(runs, category)
 }
 
@@ -48,7 +108,7 @@ export function formatHoFValue(
     return String(value)
   }
 
-  if (stat === "ap") {
+  if (stat === "ap" || stat === "aap") {
     return value.toFixed(3)
   }
 
@@ -64,13 +124,14 @@ export function getHoFValueLabel(stat: HoFStat) {
     return "AP"
   }
 
+  if (stat === "aap") {
+    return "AAP"
+  }
+
   return "Total"
 }
 
-export function formatHoFRank(
-  index: number,
-  stat: HoFStat
-) {
+export function formatHoFRank(index: number, stat: HoFStat) {
   if (stat === "ap" && index === 0) {
     return "Champion"
   }

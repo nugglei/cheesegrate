@@ -1,9 +1,11 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import CategorySelector from "../../components/CategorySelector"
 import StatSelector from "../../components/StatSelector"
+import TagBubble from "../../components/TagBubble"
 
 import { useRuns } from "../../hooks/useRuns"
 
@@ -16,7 +18,17 @@ import {
   getHoFEntries,
   getHoFValueLabel,
   hofStatOptions,
+  type HoFEntry,
+  type HoFStat,
 } from "../../lib/hof"
+
+function slugifyPlayer(player: string) {
+  return encodeURIComponent(player.toLowerCase())
+}
+
+function slugifyMap(map: string) {
+  return map.toLowerCase().replaceAll(" ", "-")
+}
 
 export default function HoFPage() {
   const { runs, loading } = useRuns()
@@ -37,12 +49,12 @@ export default function HoFPage() {
     [category]
   )
 
-const entries = useMemo(
-  () => getHoFEntries(runs, category, stat),
-  [runs, category, stat]
-)
+  const entries = useMemo(
+    () => getHoFEntries(runs, category, stat),
+    [runs, category, stat]
+  )
 
-const valueLabel = getHoFValueLabel(stat)
+  const valueLabel = getHoFValueLabel(stat)
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-10">
@@ -97,6 +109,12 @@ const valueLabel = getHoFValueLabel(stat)
                 expandedPlayer ===
                 hofEntry.player
 
+              const missingMaps =
+                categoryMaps.filter(
+                  (map) =>
+                    !hofEntry.mapSet.has(map)
+                )
+
               return (
                 <div
                   key={hofEntry.player}
@@ -114,15 +132,27 @@ const valueLabel = getHoFValueLabel(stat)
                     className="grid w-full grid-cols-[0.5fr_4fr_1fr] items-center px-6 py-4 text-left transition-colors hover:bg-neutral-900/40"
                   >
                     <div className="text-neutral-500">
-  {formatHoFRank(index, stat)}
-</div>
+                      {formatHoFRank(index, stat)}
+                    </div>
 
                     <div className="font-medium">
-                      {hofEntry.player}
+                      <Link
+                        href={`/player/${slugifyPlayer(hofEntry.player)}`}
+                        className="hover:underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {hofEntry.player}
+                      </Link>
                     </div>
 
                     <div className="text-right font-semibold">
                       {formatHoFValue(hofEntry.value, category, stat)}
+
+                      {stat === "aap" && (
+                        <span className="ml-2 text-xs font-medium text-neutral-500">
+                          {hofEntry.mapSet.size}/{categoryMaps.length}
+                        </span>
+                      )}
                     </div>
                   </button>
 
@@ -134,18 +164,23 @@ const valueLabel = getHoFValueLabel(stat)
                             <div
                               key={`${hofEntry.player}-${record.map}-${record.time}`}
                               className={`grid items-center rounded-md border border-neutral-800/60 bg-black/10 px-3 py-3 text-sm ${
-                                stat === "ap"
+                                stat === "ap" || stat === "aap"
                                   ? "grid-cols-[3fr_0.8fr_1.2fr]"
                                   : "grid-cols-[3fr_1fr]"
                               }`}
                             >
                               <div className="font-medium">
-                                {record.map}
+                                <Link
+                                  href={`/lb/${slugifyMap(record.map)}`}
+                                  className="hover:underline"
+                                >
+                                  {record.map}
+                                </Link>
                               </div>
 
                               <div
                                 className={`font-semibold ${
-                                  stat === "ap"
+                                  stat === "ap" || stat === "aap"
                                     ? "text-center"
                                     : "text-right"
                                 }`}
@@ -156,8 +191,7 @@ const valueLabel = getHoFValueLabel(stat)
                                 )}
                               </div>
 
-                              {stat ===
-                                "ap" && (
+                              {(stat === "ap" || stat === "aap") && (
                                 <div className="text-right font-semibold">
                                   {record.placement
                                     ? `#${record.placement}`
@@ -168,25 +202,19 @@ const valueLabel = getHoFValueLabel(stat)
                           )
                         )}
 
-                        {stat === "wr" && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {categoryMaps
-                              .filter(
-                                (map) =>
-                                  !hofEntry.mapSet.has(
-                                    map
-                                  )
-                              )
-                              .map((map) => (
-                                <div
+                        {(stat === "wr" || stat === "aap") &&
+                          missingMaps.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {missingMaps.map((map) => (
+                                <TagBubble
                                   key={map}
-                                  className="rounded-md border border-red-900/50 bg-red-950/30 px-2 py-1 text-xs text-red-300"
+                                  tone="red"
                                 >
                                   {map}
-                                </div>
+                                </TagBubble>
                               ))}
-                          </div>
-                        )}
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}

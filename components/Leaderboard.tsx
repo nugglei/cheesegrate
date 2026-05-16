@@ -33,6 +33,7 @@ export default function Leaderboard({
             time={formatTime(run.time, category)}
             proof={run.proof}
             date={formatDate(run.date)}
+            tag={run.tag}
           />
         )
       })}

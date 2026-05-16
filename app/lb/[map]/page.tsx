@@ -17,6 +17,7 @@ import Leaderboard from "../../../components/Leaderboard"
 import MapSearch from "../../../components/MapSearch"
 import { getLeaderboardRuns } from "../../../lib/leaderboards"
 import CategorySelector from "../../../components/CategorySelector"
+import TagBubble from "./TagBubble"
 
 export default function MapPage({
   params,

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 
 import { useRuns } from "../../hooks/useRuns"
@@ -17,6 +18,14 @@ import {
 } from "../../lib/utils"
 
 import CategorySelector from "../../components/CategorySelector"
+
+function slugifyPlayer(player: string) {
+  return encodeURIComponent(player.toLowerCase())
+}
+
+function slugifyMap(map: string) {
+  return map.toLowerCase().replaceAll(" ", "-")
+}
 
 export default function WRsPage() {
   const { runs, loading } = useRuns()
@@ -57,7 +66,12 @@ export default function WRsPage() {
             className="grid grid-cols-[0.7fr_0.35fr_0.7fr_5fr] border-b border-white/10 last:border-b-0"
           >
             <div className="p-3 border-r border-white/10 flex items-center justify-center text-center">
-              {run.map}
+              <Link
+                href={`/lb/${slugifyMap(run.map)}`}
+                className="hover:underline"
+              >
+                {run.map}
+              </Link>
             </div>
 
             <div className="p-3 border-r border-white/10 flex items-center justify-center text-center">
@@ -68,9 +82,12 @@ export default function WRsPage() {
             </div>
 
             <div className="p-3 border-r border-white/10 flex items-center justify-center text-center gap-2">
-              <span>
+              <Link
+                href={`/player/${slugifyPlayer(run.players[0])}`}
+                className="hover:underline"
+              >
                 {run.players[0]}
-              </span>
+              </Link>
 
               <a
                 href={run.proofs[0]}
@@ -93,9 +110,12 @@ export default function WRsPage() {
                         key={i}
                         className="inline-flex items-center"
                       >
-                        <span>
+                        <Link
+                          href={`/player/${slugifyPlayer(player)}`}
+                          className="hover:underline"
+                        >
                           {player}
-                        </span>
+                        </Link>
 
                         <a
                           href={run.proofs[i + 1]}
