@@ -1,21 +1,46 @@
 type TagBubbleProps = {
   children: React.ReactNode
   tone?: "white" | "blue" | "gold" | "red" | "green" | "purple"
-  size?: "sm" | "md"
+  size?: "sm" | "md" | "lg"
 }
 
-const toneClasses = {
-  white: "border-white/30 bg-white/10 text-white/80",
-  blue: "border-blue-300/40 bg-blue-400/10 text-blue-200",
-  gold: "border-yellow-300/40 bg-yellow-400/10 text-yellow-200",
-  red: "border-red-300/40 bg-red-400/10 text-red-200",
-  green: "border-green-300/40 bg-green-400/10 text-green-200",
-  purple: "border-purple-300/40 bg-purple-400/10 text-purple-200",
+const toneStyles = {
+  white: {
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    color: "rgba(255, 255, 255, 0.8)",
+  },
+  blue: {
+    borderColor: "rgba(147, 197, 253, 0.4)",
+    backgroundColor: "rgba(96, 165, 250, 0.1)",
+    color: "#bfdbfe",
+  },
+  gold: {
+    borderColor: "rgba(253, 224, 71, 0.4)",
+    backgroundColor: "rgba(250, 204, 21, 0.1)",
+    color: "#fef08a",
+  },
+  red: {
+  borderColor: "rgba(185, 28, 28, 0.65)",
+  backgroundColor: "rgba(127, 29, 29, 0.45)",
+  color: "#f87171",
+},
+  green: {
+    borderColor: "rgba(134, 239, 172, 0.4)",
+    backgroundColor: "rgba(74, 222, 128, 0.1)",
+    color: "#86efac",
+  },
+  purple: {
+    borderColor: "rgba(216, 180, 254, 0.4)",
+    backgroundColor: "rgba(192, 132, 252, 0.1)",
+    color: "#e9d5ff",
+  },
 }
 
 const sizeClasses = {
   sm: "px-2 py-0.5 text-[10px]",
   md: "px-2.5 py-1 text-xs",
+  lg: "px-4 py-2 text-xl",
 }
 
 export default function TagBubble({
@@ -25,7 +50,8 @@ export default function TagBubble({
 }: TagBubbleProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border font-medium ${toneClasses[tone]} ${sizeClasses[size]}`}
+      className={`inline-flex items-center rounded-full border font-bold leading-none ${sizeClasses[size]}`}
+      style={toneStyles[tone]}
     >
       {children}
     </span>
