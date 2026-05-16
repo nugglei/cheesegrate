@@ -4,7 +4,7 @@ const mainLinks = [
   { href: "/lb", label: "Map LBs" },
   { href: "#", label: "Player Profile" },
   { href: "#", label: "Submissions" },
-  { href: "#", label: "Tournament Results" },
+  { href: "/tournament", label: "Tournament Results" },
   { href: "/player", label: "Player Directory" },
   { href: "/hof", label: "Hall of Fame" },
 ]

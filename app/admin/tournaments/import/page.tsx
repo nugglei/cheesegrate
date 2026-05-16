@@ -261,6 +261,7 @@ export default function TournamentImportPage() {
   const [recording, setRecording] = useState("")
   const [host, setHost] = useState("")
   const [format, setFormat] = useState("b3o5")
+  const [matchFormat, setMatchFormat] = useState("maj")
 
   const [leftPlayer, setLeftPlayer] = useState<PlayerInput>({
     player: "",
@@ -322,6 +323,7 @@ export default function TournamentImportPage() {
     setRound(firstRow.round)
     setDivision(firstRow.division)
     setFormat(firstRow.format)
+    setMatchFormat("maj")
     setLeftPlayer(left)
     setRightPlayer(right)
     setMaps(importedMaps.length > 0 ? importedMaps : [emptyMap()])
@@ -331,14 +333,15 @@ export default function TournamentImportPage() {
     if (!matchId || !tournamentName) return ""
 
     return csvRow([
-      matchId,
-      tournamentName,
-      round,
-      division,
-      date,
-      recording,
-      host,
-    ])
+  matchId,
+  tournamentName,
+  round,
+  division,
+  date,
+  recording,
+  host,
+  matchFormat,
+])
   }, [matchId, tournamentName, round, division, date, recording, host])
 
   const resultsCsv = useMemo(() => {
@@ -625,6 +628,11 @@ function addCurrentToTotal() {
           <Input label="Format" value={format} onChange={setFormat} />
           <Input label="Recording" value={recording} onChange={setRecording} />
           <Input label="Host" value={host} onChange={setHost} />
+          <Input
+  label="Match Format"
+  value={matchFormat}
+  onChange={setMatchFormat}
+/>
         </div>
       </section>
 
@@ -843,6 +851,7 @@ function ResultBox({
                 updateCategory(mapIndex, side, runIndex, value)
               }
             />
+            
           </div>
         ))}
       </div>

@@ -7,8 +7,9 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/lb", label: "Map LBs" },
   { href: "/wrs", label: "WRs" },
-  { href: "/player", label: "Players" },
   { href: "/hof", label: "Hall of Fame" },
+  { href: "/player", label: "Players" },
+  { href: "/tournament", label: "Tournaments" },
 ]
 
 export default function Navbar() {
