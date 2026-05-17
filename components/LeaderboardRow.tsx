@@ -31,13 +31,55 @@ export default function LeaderboardRow({
   const [hovered, setHovered] = useState(false)
   const isMobile = tag?.toLowerCase() === "mobile"
 
+  const topThree = rank <= 3
+
+  const rowStyle =
+    rank === 1
+      ? {
+          borderColor: "#ca8a04",
+          backgroundColor: "#3b2f05",
+        }
+      : rank === 2
+      ? {
+          borderColor: "#9ca3af",
+          backgroundColor: "#262626",
+        }
+      : rank === 3
+      ? {
+          borderColor: "#a5500b",
+          backgroundColor: "#3b1d0f",
+        }
+      : {
+          borderColor: "#404040",
+          backgroundColor: "#111111",
+        }
+
+  const rankStyle =
+    rank === 1
+      ? { color: "#facc15" }
+      : rank === 2
+      ? { color: "#d4d4d8" }
+      : rank === 3
+      ? { color: "#fb923c" }
+      : { color: "#ffffff" }
+
   return (
-    <div className="flex items-center gap-6 border p-3 rounded-lg">
-      <div className="w-6">
+    <div
+      className="flex w-fit items-center gap-6 border p-3 rounded-lg"
+      style={rowStyle}
+    >
+      <div
+        className="w-6 font-bold"
+        style={rankStyle}
+      >
         {rank}
       </div>
 
-      <div className="w-40">
+      <div
+        className={`w-40 text-white ${
+          topThree ? "font-bold" : ""
+        }`}
+      >
         <Link
           href={`/player/${slugifyPlayer(player)}`}
           className="hover:underline"
@@ -46,7 +88,7 @@ export default function LeaderboardRow({
         </Link>
       </div>
 
-      <div className="w-20">
+      <div className="w-20 font-bold text-white">
         {time}
       </div>
 
@@ -66,7 +108,9 @@ export default function LeaderboardRow({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <span>{date.display}</span>
+        <span className="text-white">
+          {date.display}
+        </span>
 
         {isMobile && (
           <span className="ml-4">

@@ -1,23 +1,18 @@
 "use client"
 
-import { use, useEffect, useState } from "react"
+import { use, useState } from "react"
 import {
   categoryPresets,
   mapCategoryPresets,
 } from "../../../lib/categories"
 import {
-  formatTime,
-  formatDate,
   formatMapName,
-  getIncludedCategories,
 } from "../../../lib/utils"
-import type { Run } from "../../../lib/types"
 import { useRuns } from "../../../hooks/useRuns"
 import Leaderboard from "../../../components/Leaderboard"
 import MapSearch from "../../../components/MapSearch"
 import { getLeaderboardRuns } from "../../../lib/leaderboards"
 import CategorySelector from "../../../components/CategorySelector"
-import TagBubble from "./TagBubble"
 
 export default function MapPage({
   params,
@@ -40,42 +35,58 @@ export default function MapPage({
 
   const { runs, loading } = useRuns()
 
-{loading && (
-  <p className="text-gray-500">
-    Loading runs...
-  </p>
-)}
-
-const filteredRuns = getLeaderboardRuns(
-  runs,
-  mapName,
-  category
-)
+  const filteredRuns = getLeaderboardRuns(
+    runs,
+    mapName,
+    category
+  )
 
   return (
-    <main className="p-10">
-      <h1 className="text-4xl font-bold mb-2">
-        {mapName}
-      </h1>
+<main
+  className="py-10"
+  style={{ paddingLeft: "130px" }}
+>
+<div className="flex items-center gap-3 mb-6">
+  <h1 className="text-4xl font-bold">
+    {mapName}
+  </h1>
 
-      <p className="mb-6 text-gray-500">
-        {category}
-      </p>
+  <div
+    className="overflow-hidden rounded border border-gray-200 shrink-0"
+    style={{ width: "56px", height: "56px" }}
+  >
+    <img
+      src={`/maps/${map}.png`}
+      alt={mapName}
+      className="h-full w-full object-cover"
+    />
+  </div>
+</div>
+
+<p className="mb-6 text-gray-500">
+  {category}
+</p>
 
       <div className="mb-6">
         <MapSearch />
       </div>
 
-<CategorySelector
-  categories={categories}
-  category={category}
-  setCategory={setCategory}
-/>
+      <CategorySelector
+        categories={categories}
+        category={category}
+        setCategory={setCategory}
+      />
 
-<Leaderboard
-  runs={filteredRuns}
-  category={category}
-/>
+      {loading ? (
+        <p className="text-gray-500">
+          Loading runs...
+        </p>
+      ) : (
+        <Leaderboard
+          runs={filteredRuns}
+          category={category}
+        />
+      )}
     </main>
   )
 }

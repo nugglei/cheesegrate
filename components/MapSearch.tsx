@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { maps } from "../lib/maps"
 
 function mapToUrl(map: string) {
@@ -11,11 +12,11 @@ function mapToUrl(map: string) {
 export default function MapSearch() {
   const [search, setSearch] = useState("")
 
-const filteredMaps = maps
-  .filter((map) =>
-    map.toLowerCase().includes(search.toLowerCase())
-  )
-  .slice(0, 5)
+  const filteredMaps = maps
+    .filter((map) =>
+      map.toLowerCase().includes(search.toLowerCase())
+    )
+    .slice(0, 5)
 
   return (
     <div className="max-w-md">
@@ -27,14 +28,22 @@ const filteredMaps = maps
       />
 
       {search.length > 0 && (
-        <div className="flex flex-col mt-3">
+        <div className="flex flex-col mt-3 gap-2">
           {filteredMaps.map((map) => (
             <Link
               key={map}
               href={`/lb/${mapToUrl(map)}`}
-              className="border rounded-lg px-4 py-2 hover:bg-gray-100"
+              className="border rounded-lg px-4 py-2 hover:bg-gray-100 flex items-center gap-3"
             >
-              {map}
+              <Image
+                src={`/maps/${mapToUrl(map)}.png`}
+                alt={map}
+                width={36}
+                height={36}
+                className="rounded object-cover"
+              />
+
+              <span>{map}</span>
             </Link>
           ))}
         </div>

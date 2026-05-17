@@ -2,6 +2,25 @@ import type { Run } from "./types"
 import { getIncludedCategories } from "./utils"
 import { maps } from "./maps"
 
+function parseRunDate(value: string) {
+  if (!value) {
+    return Infinity
+  }
+
+  if (!isNaN(Number(value))) {
+    const excelEpoch = new Date(1899, 11, 30)
+
+    return new Date(
+      excelEpoch.getTime() +
+        Number(value) * 24 * 60 * 60 * 1000
+    ).getTime()
+  }
+
+  const parsed = new Date(value).getTime()
+
+  return isNaN(parsed) ? Infinity : parsed
+}
+
 export function getLeaderboardRuns(
   runs: Run[],
   mapName: string,
@@ -36,6 +55,13 @@ export function getLeaderboardRuns(
           bestRuns[player] = run
         }
 
+        if (
+          time === currentBestTime &&
+          parseRunDate(run.date) < parseRunDate(bestRuns[player].date)
+        ) {
+          bestRuns[player] = run
+        }
+
         return bestRuns
       }, {})
   ).sort((a, b) => {
@@ -45,7 +71,7 @@ export function getLeaderboardRuns(
       return timeDiff
     }
 
-    return Number(a.date) - Number(b.date)
+    return parseRunDate(a.date) - parseRunDate(b.date)
   })
 }
 
@@ -66,6 +92,14 @@ export function getWorldRecords(runs: Run[]) {
     const currentWR = wrs.get(key)
 
     if (!currentWR || time < Number(currentWR.time)) {
+      wrs.set(key, run)
+    }
+
+    if (
+      currentWR &&
+      time === Number(currentWR.time) &&
+      parseRunDate(run.date) < parseRunDate(currentWR.date)
+    ) {
       wrs.set(key, run)
     }
   }
@@ -109,7 +143,7 @@ export function getWorldRecordsForCategory(
             return timeDiff
           }
 
-          return Number(a.date) - Number(b.date)
+          return parseRunDate(a.date) - parseRunDate(b.date)
         })
 
       if (matchingRuns.length === 0) {
@@ -126,8 +160,8 @@ export function getWorldRecordsForCategory(
         map,
         category: matchingRuns[0].category.trim(),
         time: matchingRuns[0].time,
-players: [...new Set(tiedRuns.map((run) => run.player.trim()))],
-proofs: [...new Set(tiedRuns.map((run) => run.proof.trim()))],
+        players: [...new Set(tiedRuns.map((run) => run.player.trim()))],
+        proofs: [...new Set(tiedRuns.map((run) => run.proof.trim()))],
       }
     })
     .filter(
