@@ -11,6 +11,7 @@ import { useRuns } from "../../hooks/useRuns"
 
 import { categoryPresets } from "../../lib/categories"
 import { getMapsForCategory } from "../../lib/categoryMaps"
+import { getRankColor } from "../../lib/rankColors"
 import { formatTime } from "../../lib/utils"
 import {
   formatHoFRank,
@@ -62,10 +63,6 @@ export default function HoFPage() {
         <h1 className="text-4xl font-bold">
           Hall of Fame
         </h1>
-
-        <p className="mt-2 text-sm text-neutral-400">
-          Overall leaderboards
-        </p>
       </section>
 
       <div className="flex flex-col items-center gap-4">
@@ -82,6 +79,12 @@ export default function HoFPage() {
             setStat(value as HoFStat)
           }
         />
+
+        {(stat === "ap" || stat === "total") && (
+          <p className="text-sm text-neutral-400">
+            All map submissions required
+          </p>
+        )}
       </div>
 
       {loading ? (
@@ -89,13 +92,34 @@ export default function HoFPage() {
           Loading HoF...
         </p>
       ) : (
-        <section className="overflow-hidden rounded-2xl border border-neutral-800">
-          <div className="grid grid-cols-[0.5fr_4fr_1fr] border-b border-neutral-800 bg-neutral-900/60 px-6 py-4 text-sm font-semibold text-neutral-300">
-            <div>#</div>
+        <section className="w-full overflow-hidden rounded-2xl border border-neutral-800">
+          <div className="flex items-center border-b border-neutral-800 bg-neutral-900/60 px-6 py-4 text-sm font-semibold text-neutral-300">
+            <div
+              className="text-center"
+              style={{
+                width: "90px",
+                minWidth: "90px",
+              }}
+            >
+              #
+            </div>
 
-            <div>Player</div>
+            <div
+              style={{
+                flex: 1,
+                paddingLeft: "32px",
+              }}
+            >
+              Player
+            </div>
 
-            <div className="text-right">
+            <div
+              className="text-right"
+              style={{
+                width: "160px",
+                minWidth: "160px",
+              }}
+            >
               {valueLabel}
             </div>
           </div>
@@ -115,6 +139,14 @@ export default function HoFPage() {
                     !hofEntry.mapSet.has(map)
                 )
 
+              const rankColor = getRankColor(
+                index,
+                "#737373"
+              )
+
+              const playerColor =
+                getRankColor(index)
+
               return (
                 <div
                   key={hofEntry.player}
@@ -129,24 +161,59 @@ export default function HoFPage() {
                           : hofEntry.player
                       )
                     }
-                    className="grid w-full grid-cols-[0.5fr_4fr_1fr] items-center px-6 py-4 text-left transition-colors hover:bg-neutral-900/40"
+                    className="flex w-full items-center px-6 py-4 text-left transition-colors hover:bg-neutral-900/40"
                   >
-                    <div className="text-neutral-500">
+                    <div
+                      className="text-center font-bold"
+                      style={{
+                        width: "90px",
+                        minWidth: "90px",
+                        color: rankColor,
+                      }}
+                    >
                       {formatHoFRank(index, stat)}
                     </div>
 
-                    <div className="font-medium">
+                    <div
+                      className={
+                        index <= 2
+                          ? "font-bold"
+                          : "font-medium"
+                      }
+                      style={{
+                        flex: 1,
+                        paddingLeft: "32px",
+                        color: playerColor,
+                      }}
+                    >
                       <Link
                         href={`/player/${slugifyPlayer(hofEntry.player)}`}
                         className="hover:underline"
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={(event) =>
+                          event.stopPropagation()
+                        }
                       >
                         {hofEntry.player}
                       </Link>
                     </div>
 
-                    <div className="text-right font-semibold">
-                      {formatHoFValue(hofEntry.value, category, stat)}
+                    <div
+                      className={`text-right ${
+                        index <= 2
+                          ? "font-bold"
+                          : "font-semibold"
+                      }`}
+                      style={{
+                        width: "160px",
+                        minWidth: "160px",
+                        color: playerColor,
+                      }}
+                    >
+                      {formatHoFValue(
+                        hofEntry.value,
+                        category,
+                        stat
+                      )}
 
                       {stat === "aap" && (
                         <span className="ml-2 text-xs font-medium text-neutral-500">
@@ -169,14 +236,20 @@ export default function HoFPage() {
                                   : "grid-cols-[3fr_1fr]"
                               }`}
                             >
-                              <div className="font-medium">
-                                <Link
-                                  href={`/lb/${slugifyMap(record.map)}`}
-                                  className="hover:underline"
-                                >
-                                  {record.map}
-                                </Link>
-                              </div>
+                              <div className="flex items-center gap-3 font-medium">
+  <img
+    src={`/maps/${slugifyMap(record.map)}.png`}
+    alt={record.map}
+    className="h-6 w-10 rounded object-cover"
+  />
+
+  <Link
+    href={`/lb/${slugifyMap(record.map)}`}
+    className="hover:underline"
+  >
+    {record.map}
+  </Link>
+</div>
 
                               <div
                                 className={`font-semibold ${
@@ -192,12 +265,18 @@ export default function HoFPage() {
                               </div>
 
                               {(stat === "ap" || stat === "aap") && (
-                                <div className="text-right font-semibold">
-                                  {record.placement
-                                    ? `#${record.placement}`
-                                    : ""}
-                                </div>
-                              )}
+  <div
+    className="text-right font-semibold"
+    style={{
+      color:
+        record.placement && record.placement <= 3
+          ? getRankColor(record.placement - 1)
+          : undefined,
+    }}
+  >
+    {record.placement ?? ""}
+  </div>
+)}
                             </div>
                           )
                         )}
