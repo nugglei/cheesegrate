@@ -18,8 +18,8 @@ export function useTournamentData() {
         loadTournamentResults(),
       ])
 
-      setMatches(matchData)
-      setResults(resultData)
+      setMatches(matchData ?? [])
+      setResults(resultData ?? [])
       setLoading(false)
     }
 
