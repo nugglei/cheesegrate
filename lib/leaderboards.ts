@@ -157,22 +157,24 @@ export function getWorldRecordsForCategory(
       )
 
       return {
-        map,
-        category: matchingRuns[0].category.trim(),
-        time: matchingRuns[0].time,
-        players: [...new Set(tiedRuns.map((run) => run.player.trim()))],
-        proofs: [...new Set(tiedRuns.map((run) => run.proof.trim()))],
-      }
+  map,
+  category: matchingRuns[0].category.trim(),
+  time: matchingRuns[0].time,
+  date: matchingRuns[0].date,
+  players: [...new Set(tiedRuns.map((run) => run.player.trim()))],
+  proofs: [...new Set(tiedRuns.map((run) => run.proof.trim()))],
+}
     })
     .filter(
       (
         record
       ): record is {
-        map: string
-        category: string
-        time: string
-        players: string[]
-        proofs: string[]
-      } => record !== null
-    )
+  map: string
+  category: string
+  time: string
+  date: string
+  players: string[]
+  proofs: string[]
+} => record !== null
+    )   
 }
