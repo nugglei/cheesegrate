@@ -217,18 +217,17 @@ export function getDidWin(
 }
 
 export function getRuns(result: TournamentMatchResult): RunResult[] {
-  return [
-    { run: result.run1, category: result.run1category },
-    { run: result.run2, category: result.run2category },
-    { run: result.run3, category: result.run3category },
-    { run: result.run4, category: result.run4category },
-    { run: result.run5, category: result.run5category },
-    { run: result.run6, category: result.run6category },
-    { run: result.run7, category: result.run7category },
-    { run: result.run8, category: result.run8category },
-    { run: result.run9, category: result.run9category },
-    { run: result.run10, category: result.run10category },
-  ].filter((result): result is RunResult => Boolean(result.run))
+  const runs: RunResult[] = []
+
+  if (result.run1) runs.push({ run: result.run1, category: result.run1category })
+  if (result.run2) runs.push({ run: result.run2, category: result.run2category })
+  if (result.run3) runs.push({ run: result.run3, category: result.run3category })
+  if (result.run4) runs.push({ run: result.run4, category: result.run4category })
+  if (result.run5) runs.push({ run: result.run5, category: result.run5category })
+  if (result.run6) runs.push({ run: result.run6, category: result.run6category })
+  if (result.run7) runs.push({ run: result.run7, category: result.run7category })
+
+  return runs
 }
 
 export function getDisplayCategoryLabel(category: string) {
