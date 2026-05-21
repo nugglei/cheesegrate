@@ -6,7 +6,7 @@ import { useRuns } from "@/hooks/useRuns"
 
 export default function PlayerProfilePage() {
   const params = useParams()
-  const { runs, loading, error } = useRuns()
+  const { runs, loading } = useRuns()
 
   const playerSlug = decodeURIComponent(String(params.player ?? "")).toLowerCase()
 
@@ -22,14 +22,6 @@ export default function PlayerProfilePage() {
     return (
       <main className="mx-auto max-w-6xl px-5 py-8">
         <p>Loading player...</p>
-      </main>
-    )
-  }
-
-  if (error) {
-    return (
-      <main className="mx-auto max-w-6xl px-5 py-8">
-        <p>Failed to load player.</p>
       </main>
     )
   }
