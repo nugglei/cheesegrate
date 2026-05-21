@@ -10,7 +10,7 @@ function slugifyPlayer(player: string) {
 }
 
 export default function PlayerDirectoryPage() {
-  const { runs, loading, error } = useRuns()
+  const { runs, loading } = useRuns()
   const [search, setSearch] = useState("")
 
   const players = useMemo(() => {
@@ -39,14 +39,6 @@ export default function PlayerDirectoryPage() {
     )
   }
 
-  if (error) {
-    return (
-      <main className="mx-auto max-w-6xl px-5 py-8">
-        <p>Failed to load players.</p>
-      </main>
-    )
-  }
-
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
       <h1 className="mb-6 text-3xl font-bold">Players</h1>
@@ -57,17 +49,17 @@ export default function PlayerDirectoryPage() {
         Showing {filteredPlayers.length} of {players.length} players
       </div>
 
-<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-  {filteredPlayers.map((player) => (
-    <Link
-      key={player}
-      href={`/player/${slugifyPlayer(player)}`}
-      className="border border-white/10 p-4 text-lg font-medium hover:border-white/30"
-    >
-      {player}
-    </Link>
-  ))}
-</div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredPlayers.map((player) => (
+          <Link
+            key={player}
+            href={`/player/${slugifyPlayer(player)}`}
+            className="border border-white/10 p-4 text-lg font-medium hover:border-white/30"
+          >
+            {player}
+          </Link>
+        ))}
+      </div>
     </main>
   )
 }
