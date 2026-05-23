@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -15,28 +16,32 @@ const navLinks = [
 ]
 
 export default function Navbar() {
-  const supabase = createClient()
+  const pathname = usePathname()
   const [playerName, setPlayerName] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function loadAccount() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+  const loadAccount = useCallback(async () => {
+    const supabase = createClient()
 
-      if (!user) {
-        setPlayerName(null)
-        return
-      }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("player_name")
-        .eq("id", user.id)
-        .single()
-
-      setPlayerName(profile?.player_name || null)
+    if (!user) {
+      setPlayerName(null)
+      return
     }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("player_name")
+      .eq("id", user.id)
+      .single()
+
+    setPlayerName(profile?.player_name || null)
+  }, [])
+
+  useEffect(() => {
+    const supabase = createClient()
 
     loadAccount()
 
@@ -46,10 +51,13 @@ export default function Navbar() {
       loadAccount()
     })
 
+    window.addEventListener("profile-updated", loadAccount)
+
     return () => {
       subscription.unsubscribe()
+      window.removeEventListener("profile-updated", loadAccount)
     }
-  }, [supabase])
+  }, [loadAccount, pathname])
 
   return (
     <header className="border-b border-white/10 bg-black">
@@ -67,9 +75,9 @@ export default function Navbar() {
         </Link>
 
         <div
-  className="flex items-center gap-6"
-  style={{ marginLeft: "240px" }}
->
+          className="flex items-center gap-6"
+          style={{ marginLeft: "80px" }}
+        >
           {navLinks.map((link) => (
             <Link
               key={link.href}
