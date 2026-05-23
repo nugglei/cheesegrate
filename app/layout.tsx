@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Cheesegrate",
-  description: "Speed Race leaderboards, world records, and Hall of Fame.",
+  description: "Speed Race Community Hub",
 }
 
 export default function RootLayout({
