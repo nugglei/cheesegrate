@@ -551,8 +551,17 @@ if (!isAdmin) {
           className="mt-4 min-h-60 w-full rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-sm text-zinc-200 outline-none"
         />
 
-          <div className="mt-6">
-</div>
+          {bulkText.trim() && legacyRows.length === 0 && (
+  <p className="mt-3 text-sm text-red-300">
+    No legacy rows detected. Check the paste format.
+  </p>
+)}
+
+{legacyRows.length > 0 && (
+  <p className="mt-3 text-sm text-green-300">
+    Detected {legacyRows.length} legacy rows.
+  </p>
+)}
       </section>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -736,7 +745,7 @@ function DatalistInput({
   onChange: (value: string) => void
   options: string[]
 }) {
-  const listId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-options`
+  const listId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${options.join("-").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-options`
 
   return (
     <label className="grid gap-2">
