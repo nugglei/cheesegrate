@@ -60,6 +60,8 @@ const MATCH_FORMAT_OPTIONS = [
   { value: "qqp", label: "qqp — Qualifier + QP" },
 ]
 
+const CATEGORY_OPTIONS = ["Skipless IGT", "Skip IGT"]
+
 export default function TournamentImportPage() {
     const [isCheckingAdmin, setIsCheckingAdmin] = useState(true)
 const [isAdmin, setIsAdmin] = useState(false)
@@ -67,6 +69,7 @@ const [isAdmin, setIsAdmin] = useState(false)
 
   const [matchId, setMatchId] = useState("")
   const [tournamentName, setTournamentName] = useState("")
+  const [tournamentNameOptions, setTournamentNameOptions] = useState<string[]>([])
   const [round, setRound] = useState("")
   const [division, setDivision] = useState("")
   const [date, setDate] = useState("")
@@ -123,6 +126,42 @@ useEffect(() => {
   }
 
   checkAdmin()
+
+  return () => {
+    isMounted = false
+  }
+}, [])
+
+useEffect(() => {
+  let isMounted = true
+
+  async function loadTournamentNames() {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from("tournament_matches")
+      .select("tournament_name")
+      .order("tournament_name", { ascending: true })
+
+    if (error) {
+      console.error("Failed to load tournament names:", error)
+      return
+    }
+
+    const names = Array.from(
+      new Set(
+        (data ?? [])
+          .map((row) => row.tournament_name)
+          .filter((name): name is string => Boolean(name?.trim()))
+      )
+    )
+
+    if (isMounted) {
+      setTournamentNameOptions(names)
+    }
+  }
+
+  loadTournamentNames()
 
   return () => {
     isMounted = false
@@ -418,24 +457,27 @@ async function addCurrentToDatabase() {
     )
   }
 
-  function updateBulkRuns(
-    mapIndex: number,
-    side: "left" | "right",
-    value: string
-  ) {
-    const parsedRuns = splitBulkRuns(value).slice(0, MAX_RUN_COUNT)
+function updateBulkRuns(
+  mapIndex: number,
+  side: "left" | "right",
+  value: string
+) {
+  const parsedRuns = splitBulkRuns(value).slice(0, MAX_RUN_COUNT)
 
-    setMaps((current) =>
-      current.map((map, index) => {
-        if (index !== mapIndex) return map
+  setMaps((current) =>
+    current.map((map, index) => {
+      if (index !== mapIndex) return map
 
-        return {
-          ...map,
-          [side]: makeResultFromRuns(parsedRuns),
-        }
-      })
-    )
-  }
+      return {
+        ...map,
+        [side]: {
+          ...makeResultFromRuns(parsedRuns),
+          bulkRuns: value,
+        },
+      }
+    })
+  )
+}
 
   function addRun(mapIndex: number) {
     setMaps((current) =>
@@ -519,11 +561,12 @@ if (!isAdmin) {
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Input label="Match ID" value={matchId} onChange={setMatchId} />
 
-          <Input
-            label="Tournament Name"
-            value={tournamentName}
-            onChange={setTournamentName}
-          />
+          <DatalistInput
+  label="Tournament Name"
+  value={tournamentName}
+  onChange={setTournamentName}
+  options={tournamentNameOptions}
+/>
 
           <Input label="Round" value={round} onChange={setRound} />
           <Input label="Division" value={division} onChange={setDivision} />
@@ -682,6 +725,39 @@ function Input({
   )
 }
 
+function DatalistInput({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: string[]
+}) {
+  const listId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-options`
+
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-medium text-zinc-400">{label}</span>
+
+      <input
+        value={value}
+        list={listId}
+        onChange={(event) => onChange(event.target.value)}
+        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
+      />
+
+      <datalist id={listId}>
+        {options.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
+    </label>
+  )
+}
+
 function Select({
   label,
   value,
@@ -801,13 +877,14 @@ function ResultBox({
               onChange={(value) => updateRun(mapIndex, side, runIndex, value)}
             />
 
-            <Input
-              label="Category"
-              value={result.categories[runIndex] || DEFAULT_CATEGORY}
-              onChange={(value) =>
-                updateCategory(mapIndex, side, runIndex, value)
-              }
-            />
+            <DatalistInput
+  label="Category"
+  value={result.categories[runIndex] || DEFAULT_CATEGORY}
+  onChange={(value) =>
+    updateCategory(mapIndex, side, runIndex, value)
+  }
+  options={CATEGORY_OPTIONS}
+/>
           </div>
         ))}
       </div>
