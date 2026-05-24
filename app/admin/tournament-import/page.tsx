@@ -20,13 +20,6 @@ import {
   type PlayerMapResult,
 } from "@/lib/tournamentImport"
 
-type SavedImport = {
-  id: number
-  label: string
-  matchCsv: string
-  resultsCsv: string
-}
-
 type LegacyRow = {
   tournamentName: string
   format: string
@@ -93,7 +86,8 @@ const [isAdmin, setIsAdmin] = useState(false)
   })
 
   const [maps, setMaps] = useState<MapInput[]>([emptyMap()])
-  const [savedImports, setSavedImports] = useState<SavedImport[]>([])
+  const [isSaving, setIsSaving] = useState(false)
+const [saveMessage, setSaveMessage] = useState("")
 
   const legacyRows = useMemo(() => parseLegacyRows(bulkText), [bulkText])
 
@@ -305,9 +299,6 @@ useEffect(() => {
       .join("\n")
   }, [maps, matchId, format, matchFormat, leftPlayer, rightPlayer])
 
-  const totalMatchCsv = savedImports.map((item) => item.matchCsv).join("\n")
-  const totalResultsCsv = savedImports.map((item) => item.resultsCsv).join("\n")
-
   function resetCurrentMatch() {
     setBulkText("")
     setMatchId("")
@@ -324,29 +315,51 @@ useEffect(() => {
     setMaps([emptyMap()])
   }
 
-  function addCurrentToTotal() {
-    if (!matchCsv || !resultsCsv) return
+async function addCurrentToDatabase() {
+  if (!matchCsv || !resultsCsv || isSaving) return
 
-    const normalizedMatchFormat = matchFormat.trim().toLowerCase()
-    const isQualifier =
-      normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp"
+  setIsSaving(true)
+  setSaveMessage("")
 
-    setSavedImports((current) => [
-      ...current,
-      {
-        id: Date.now(),
-        label: isQualifier
-          ? `${matchId || "Untitled"} — ${leftPlayer.player || "Player"}`
-          : `${matchId || "Untitled"} — ${
-              leftPlayer.player || "Player 1"
-            } vs ${rightPlayer.player || "Player 2"}`,
-        matchCsv,
-        resultsCsv,
-      },
-    ])
+  const supabase = createClient()
 
-    resetCurrentMatch()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    setSaveMessage("You are not logged in.")
+    setIsSaving(false)
+    return
   }
+
+  const response = await fetch("/api/admin/tournaments/import", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      matchCsv,
+      resultsCsv,
+    }),
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    setSaveMessage(data.error || "Failed to add match.")
+    setIsSaving(false)
+    return
+  }
+
+  setSaveMessage(
+    `Added ${data.matchId} with ${data.resultRowsInserted} result rows.`
+  )
+
+  resetCurrentMatch()
+  setIsSaving(false)
+}
 
   function updateMap(index: number, nextMap: Partial<MapInput>) {
     setMaps((current) =>
@@ -478,8 +491,7 @@ if (!isAdmin) {
       <h1 className="text-4xl font-bold">Tournament Match Importer</h1>
 
       <p className="mt-2 text-zinc-400">
-        Paste one legacy match, edit anything below, then add it to the live CSV
-        output.
+        Paste one legacy match, edit anything below, then add it to the tournament database.
       </p>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -630,44 +642,19 @@ if (!isAdmin) {
           </button>
         </div>
       </section>
-      <section className="mt-8 grid gap-6">
+      <section className="mt-8 grid gap-3">
   <button
     type="button"
-    onClick={addCurrentToTotal}
-    disabled={!matchCsv || !resultsCsv}
+    onClick={addCurrentToDatabase}
+    disabled={!matchCsv || !resultsCsv || isSaving}
     className="rounded-xl border border-green-400/30 bg-green-500/10 px-4 py-3 font-semibold text-green-300 hover:bg-green-500/20 disabled:cursor-not-allowed disabled:opacity-40"
   >
-    Add Current Match to Live CSV
+    {isSaving ? "Adding..." : "Add Current Match to Database"}
   </button>
 
-  {savedImports.length > 0 && (
-    <div className="grid gap-2">
-      {savedImports.map((item) => (
-        <div
-          key={item.id}
-          className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-        >
-          <span className="text-sm text-zinc-300">{item.label}</span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setSavedImports((current) =>
-                current.filter((saved) => saved.id !== item.id)
-              )
-            }
-            className="text-sm text-red-300 hover:underline"
-          >
-            Remove
-          </button>
-        </div>
-      ))}
-    </div>
+  {saveMessage && (
+    <p className="text-sm text-zinc-300">{saveMessage}</p>
   )}
-
-  <LiveCsvBox title="Live tournament-match.csv Rows" value={totalMatchCsv} />
-
-  <LiveCsvBox title="Live tournament-results.csv Rows" value={totalResultsCsv} />
 </section>
     </main>
   )
@@ -825,26 +812,5 @@ function ResultBox({
         ))}
       </div>
     </div>
-  )
-}
-
-function LiveCsvBox({
-  title,
-  value,
-}: {
-  title: string
-  value: string
-}) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h2 className="text-2xl font-bold">{title}</h2>
-
-      <textarea
-        readOnly
-        value={value}
-        placeholder="Added matches will appear here..."
-        className="mt-4 min-h-40 w-full rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-sm text-zinc-200 outline-none"
-      />
-    </section>
   )
 }
