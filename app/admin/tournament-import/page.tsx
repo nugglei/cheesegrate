@@ -1,24 +1,24 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
-type PlayerInput = {
-  player: string
-  seed: string
-}
-
-type PlayerMapResult = {
-  runs: string[]
-  categories: string[]
-  bulkRuns: string
-  visibleRunCount: number
-}
-
-type MapInput = {
-  map: string
-  left: PlayerMapResult
-  right: PlayerMapResult
-}
+import {
+  DEFAULT_CATEGORY,
+  DEFAULT_RUN_COUNT,
+  MAX_RUN_COUNT,
+  buildResultRow,
+  csvRow,
+  emptyMap,
+  makeResultFromRuns,
+  parseLegacyRows,
+  resolveMapResultsForFormat,
+  resolveMatchResult,
+  splitBulkRuns,
+  type MapInput,
+  type PlayerInput,
+  type PlayerMapResult,
+} from "@/lib/tournamentImport"
 
 type SavedImport = {
   id: number
@@ -40,217 +40,36 @@ type LegacyRow = {
   runs: string[]
 }
 
-const MAX_RUN_COUNT = 10
-const DEFAULT_RUN_COUNT = 5
-const DEFAULT_CATEGORY = "Skipless IGT"
+type MapResultValue = "W" | "L" | "D" | ""
+type MatchResultValue = "W" | "L" | "D" | ""
 
-function makeEmptyArray(length: number) {
-  return Array.from({ length }, () => "")
+type MapPlayerSummary = {
+  average: string
+  best: string
+  result: MapResultValue
 }
 
-function emptyResult(): PlayerMapResult {
-  return {
-    runs: makeEmptyArray(MAX_RUN_COUNT),
-    categories: Array.from({ length: MAX_RUN_COUNT }, () => DEFAULT_CATEGORY),
-    bulkRuns: "",
-    visibleRunCount: DEFAULT_RUN_COUNT,
-  }
-}
+const MAP_FORMAT_OPTIONS = [
+  { value: "b3o5", label: "b3o5 — Best 3 Runs of 5 Attempts" },
+  { value: "b3o5m", label: "b3o5m — Best 3 Runs of 5 Attempts w/ Mal Tournament 6th Attempt" },
+  { value: "srm4", label: "srm4 — SRM Mean of 4" },
+  { value: "srm3", label: "srm3 — SRM Mean of 3" },
+  { value: "qp", label: "qp — Qualifier Peak" },
+  { value: "sd", label: "sd — Sudden Death Win by 2" },
+  { value: "wdl", label: "wdl — Win/Draw/Loss Win by 2" },
+]
 
-function emptyMap(): MapInput {
-  return {
-    map: "",
-    left: emptyResult(),
-    right: emptyResult(),
-  }
-}
-
-function isBadResult(value: string) {
-  return ["DNF", "DNP", "DQ"].includes(value.trim().toUpperCase())
-}
-
-function parseTime(value: string) {
-  const trimmed = value.trim()
-  if (!trimmed || isBadResult(trimmed)) return null
-
-  const parsed = Number(trimmed)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function getBestCount(format: string) {
-  const match = format.trim().toLowerCase().match(/^b(\d+)o\d+$/)
-  return match ? Number(match[1]) : 1
-}
-
-function formatTime(value: number) {
-  return value.toFixed(3)
-}
-
-function getAverageAndBest(runs: string[], format: string) {
-  const bestCount = getBestCount(format)
-
-  const times = runs
-    .map(parseTime)
-    .filter((time): time is number => time !== null)
-    .sort((a, b) => a - b)
-
-  if (times.length === 0) return { average: "DNF", best: "DNF" }
-
-  const best = times[0]
-
-  if (times.length < bestCount) {
-    return { average: "DNF", best: String(best) }
-  }
-
-  const averageTimes = times.slice(0, bestCount)
-  const average =
-    averageTimes.reduce((total, time) => total + time, 0) / averageTimes.length
-
-  return {
-    average: formatTime(average),
-    best: String(best),
-  }
-}
-
-function csvCell(value: string | number | undefined) {
-  const text = String(value ?? "")
-
-  if (text.includes(",") || text.includes('"') || text.includes("\n")) {
-    return `"${text.replaceAll('"', '""')}"`
-  }
-
-  return text
-}
-
-function csvRow(values: (string | number | undefined)[]) {
-  return values.map(csvCell).join(",")
-}
-
-function splitBulkRuns(value: string) {
-  return value
-    .split(/[\s,|/]+/)
-    .map((run) => run.trim())
-    .filter(Boolean)
-}
-
-function normalizeRuns(runs: string[]) {
-  return [...runs, ...makeEmptyArray(MAX_RUN_COUNT)].slice(0, MAX_RUN_COUNT)
-}
-
-function visibleCountForRuns(runs: string[]) {
-  const lastFilledIndex = runs.findLastIndex((run) => run.trim())
-
-  return Math.max(
-    DEFAULT_RUN_COUNT,
-    Math.min(lastFilledIndex + 1, MAX_RUN_COUNT)
-  )
-}
-
-function makeResultFromRuns(runs: string[]): PlayerMapResult {
-  const normalizedRuns = normalizeRuns(runs)
-
-  return {
-    runs: normalizedRuns,
-    categories: Array.from({ length: MAX_RUN_COUNT }, () => DEFAULT_CATEGORY),
-    bulkRuns: normalizedRuns.filter(Boolean).join(" "),
-    visibleRunCount: visibleCountForRuns(normalizedRuns),
-  }
-}
-
-function buildResultRow({
-  matchId,
-  set,
-  map,
-  format,
-  player,
-  opponent,
-  result,
-}: {
-  matchId: string
-  set: string | number
-  map: string
-  format: string
-  player: PlayerInput
-  opponent: PlayerInput
-  result: PlayerMapResult
-}) {
-  const csvRuns = result.runs.slice(0, MAX_RUN_COUNT)
-  const csvCategories = result.categories.slice(0, MAX_RUN_COUNT)
-  const { average, best } = getAverageAndBest(csvRuns, format)
-
-  const runColumns = csvRuns.flatMap((run, index) => {
-    const cleanRun = run.trim()
-    const cleanCategory = csvCategories[index]?.trim() || DEFAULT_CATEGORY
-
-    return [cleanRun, cleanRun && !isBadResult(cleanRun) ? cleanCategory : ""]
-  })
-
-  return csvRow([
-    matchId,
-    set,
-    map,
-    format,
-    player.seed,
-    player.player,
-    opponent.player,
-    ...runColumns,
-    average,
-    best,
-  ])
-}
-
-function parseLegacyRows(rawText: string): LegacyRow[] {
-  if (!rawText.trim()) return []
-
-  return rawText
-    .trim()
-    .split(/\r?\n/)
-    .map((line) => line.split("\t"))
-    .map((row) => {
-      const [
-        tournamentName,
-        format,
-        division,
-        round,
-        matchId,
-        seed,
-        player,
-        map,
-        set,
-        ...runs
-      ] = row
-
-      return {
-        tournamentName: tournamentName || "",
-        format: format || "",
-        division: division || "",
-        round: round || "",
-        matchId: matchId || "",
-        seed: seed || "",
-        player: player || "",
-        map: map || "",
-        set: set || "",
-        runs: runs.filter((run) => run !== undefined),
-      }
-    })
-    .filter(
-      (row) =>
-        row.tournamentName &&
-        row.format &&
-        row.round &&
-        row.matchId &&
-        row.seed &&
-        row.player &&
-        row.map &&
-        row.set
-    )
-}
-
-function copyText(text: string) {
-  navigator.clipboard.writeText(text)
-}
+const MATCH_FORMAT_OPTIONS = [
+  { value: "maj", label: "maj — Majority of Maps Won" },
+  { value: "sum", label: "sum — Sum of Averages" },
+  { value: "manual", label: "manual — Manual Result" },
+  { value: "q", label: "q — Qualifier" },
+  { value: "qqp", label: "qqp — Qualifier + QP" },
+]
 
 export default function TournamentImportPage() {
+    const [isCheckingAdmin, setIsCheckingAdmin] = useState(true)
+const [isAdmin, setIsAdmin] = useState(false)
   const [bulkText, setBulkText] = useState("")
 
   const [matchId, setMatchId] = useState("")
@@ -277,6 +96,44 @@ export default function TournamentImportPage() {
   const [savedImports, setSavedImports] = useState<SavedImport[]>([])
 
   const legacyRows = useMemo(() => parseLegacyRows(bulkText), [bulkText])
+
+useEffect(() => {
+  let isMounted = true
+
+  async function checkAdmin() {
+    const supabase = createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      if (isMounted) {
+        setIsAdmin(false)
+        setIsCheckingAdmin(false)
+      }
+
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (isMounted) {
+      setIsAdmin(profile?.role === "admin")
+      setIsCheckingAdmin(false)
+    }
+  }
+
+  checkAdmin()
+
+  return () => {
+    isMounted = false
+  }
+}, [])
 
   useEffect(() => {
     if (legacyRows.length === 0) return
@@ -322,94 +179,174 @@ export default function TournamentImportPage() {
     setTournamentName(firstRow.tournamentName)
     setRound(firstRow.round)
     setDivision(firstRow.division)
-    setFormat(firstRow.format)
+    setFormat(firstRow.format || "b3o5")
     setMatchFormat("maj")
     setLeftPlayer(left)
     setRightPlayer(right)
     setMaps(importedMaps.length > 0 ? importedMaps : [emptyMap()])
   }, [legacyRows])
 
+  const calculatedMatchResults = useMemo(() => {
+    const normalizedMatchFormat = matchFormat.trim().toLowerCase()
+
+    if (normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp") {
+      return {
+        leftResult: "",
+        rightResult: "",
+      }
+    }
+
+    const mapResults = maps
+      .filter((map) => map.map.trim())
+      .map((map) =>
+        resolveMapResultsForFormat(
+          map.left.runs,
+          map.right.runs,
+          format,
+          matchFormat
+        )
+      )
+
+    const leftResult = resolveMatchResult({
+      matchFormat,
+      results: mapResults.map((mapResult) => mapResult.left.result),
+      averages: mapResults.map((mapResult) => mapResult.left.average),
+      opponentAverages: mapResults.map((mapResult) => mapResult.right.average),
+    })
+
+    const rightResult = resolveMatchResult({
+      matchFormat,
+      results: mapResults.map((mapResult) => mapResult.right.result),
+      averages: mapResults.map((mapResult) => mapResult.right.average),
+      opponentAverages: mapResults.map((mapResult) => mapResult.left.average),
+    })
+
+    return {
+      leftResult,
+      rightResult,
+    }
+  }, [maps, format, matchFormat])
+
   const matchCsv = useMemo(() => {
     if (!matchId || !tournamentName) return ""
 
+    const normalizedMatchFormat = matchFormat.trim().toLowerCase()
+    const isQualifier =
+      normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp"
+
     return csvRow([
-  matchId,
-  tournamentName,
-  round,
-  division,
-  date,
-  recording,
-  host,
-  matchFormat,
-])
-  }, [matchId, tournamentName, round, division, date, recording, host])
+      matchId,
+      tournamentName,
+      round,
+      division,
+      date,
+      recording,
+      host,
+      matchFormat,
+      leftPlayer.player,
+      calculatedMatchResults.leftResult,
+      isQualifier ? "" : rightPlayer.player,
+      calculatedMatchResults.rightResult,
+    ])
+  }, [
+    matchId,
+    tournamentName,
+    round,
+    division,
+    date,
+    recording,
+    host,
+    matchFormat,
+    leftPlayer.player,
+    rightPlayer.player,
+    calculatedMatchResults,
+  ])
 
   const resultsCsv = useMemo(() => {
+    const normalizedMatchFormat = matchFormat.trim().toLowerCase()
+    const isQualifier =
+      normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp"
+
     return maps
       .filter((map) => map.map.trim())
-      .flatMap((map, index) => [
-        buildResultRow({
+      .flatMap((map, index) => {
+        const leftRow = buildResultRow({
           matchId,
           set: index + 1,
           map: map.map,
           format,
+          matchFormat,
           player: leftPlayer,
           opponent: rightPlayer,
           result: map.left,
-        }),
-        buildResultRow({
+          opponentResult: map.right,
+          side: "left",
+        })
+
+        if (isQualifier) {
+          return [leftRow]
+        }
+
+        const rightRow = buildResultRow({
           matchId,
           set: index + 1,
           map: map.map,
           format,
+          matchFormat,
           player: rightPlayer,
           opponent: leftPlayer,
           result: map.right,
-        }),
-      ])
+          opponentResult: map.left,
+          side: "right",
+        })
+
+        return [leftRow, rightRow]
+      })
       .join("\n")
-  }, [maps, matchId, format, leftPlayer, rightPlayer])
+  }, [maps, matchId, format, matchFormat, leftPlayer, rightPlayer])
 
   const totalMatchCsv = savedImports.map((item) => item.matchCsv).join("\n")
   const totalResultsCsv = savedImports.map((item) => item.resultsCsv).join("\n")
 
-function addCurrentToTotal() {
-  if (!matchCsv || !resultsCsv) return
+  function resetCurrentMatch() {
+    setBulkText("")
+    setMatchId("")
+    setTournamentName("")
+    setRound("")
+    setDivision("")
+    setDate("")
+    setRecording("")
+    setHost("")
+    setFormat("b3o5")
+    setMatchFormat("maj")
+    setLeftPlayer({ player: "", seed: "" })
+    setRightPlayer({ player: "", seed: "" })
+    setMaps([emptyMap()])
+  }
 
-  setSavedImports((current) => [
-    ...current,
-    {
-      id: Date.now(),
-      label: `${matchId || "Untitled"} — ${
-        leftPlayer.player || "Player 1"
-      } vs ${rightPlayer.player || "Player 2"}`,
-      matchCsv,
-      resultsCsv,
-    },
-  ])
+  function addCurrentToTotal() {
+    if (!matchCsv || !resultsCsv) return
 
-  setBulkText("")
-  setMatchId("")
-  setTournamentName("")
-  setRound("")
-  setDivision("")
-  setDate("")
-  setRecording("")
-  setHost("")
-  setFormat("b3o5")
+    const normalizedMatchFormat = matchFormat.trim().toLowerCase()
+    const isQualifier =
+      normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp"
 
-  setLeftPlayer({
-    player: "",
-    seed: "",
-  })
+    setSavedImports((current) => [
+      ...current,
+      {
+        id: Date.now(),
+        label: isQualifier
+          ? `${matchId || "Untitled"} — ${leftPlayer.player || "Player"}`
+          : `${matchId || "Untitled"} — ${
+              leftPlayer.player || "Player 1"
+            } vs ${rightPlayer.player || "Player 2"}`,
+        matchCsv,
+        resultsCsv,
+      },
+    ])
 
-  setRightPlayer({
-    player: "",
-    seed: "",
-  })
-
-  setMaps([emptyMap()])
-}
+    resetCurrentMatch()
+  }
 
   function updateMap(index: number, nextMap: Partial<MapInput>) {
     setMaps((current) =>
@@ -514,27 +451,35 @@ function addCurrentToTotal() {
   }
 
   function resetForm() {
-    setBulkText("")
-    setMatchId("")
-    setTournamentName("")
-    setRound("")
-    setDivision("")
-    setDate("")
-    setRecording("")
-    setHost("")
-    setFormat("b3o5")
-    setLeftPlayer({ player: "", seed: "" })
-    setRightPlayer({ player: "", seed: "" })
-    setMaps([emptyMap()])
+    resetCurrentMatch()
   }
+
+if (isCheckingAdmin) {
+  return (
+    <main className="mx-auto max-w-3xl px-5 py-16">
+      <h1 className="text-3xl font-bold">Checking access...</h1>
+    </main>
+  )
+}
+
+if (!isAdmin) {
+  return (
+    <main className="mx-auto max-w-3xl px-5 py-16">
+      <h1 className="text-3xl font-bold">403 Forbidden</h1>
+<p className="mt-2 text-zinc-400">
+  You need admin permissions to use the tournament importer.
+</p>
+    </main>
+  )
+}
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
       <h1 className="text-4xl font-bold">Tournament Match Importer</h1>
 
       <p className="mt-2 text-zinc-400">
-        Paste one legacy match, edit anything below, then copy the generated CSV
-        rows.
+        Paste one legacy match, edit anything below, then add it to the live CSV
+        output.
       </p>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -552,64 +497,8 @@ function addCurrentToTotal() {
           className="mt-4 min-h-60 w-full rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-sm text-zinc-200 outline-none"
         />
 
-        <div className="mt-6 grid gap-6">
-          <OutputBox
-            title="Current tournament-match.csv Row"
-            value={matchCsv}
-            onCopy={() => copyText(matchCsv)}
-          />
-
-          <OutputBox
-            title="Current tournament-results.csv Rows"
-            value={resultsCsv}
-            onCopy={() => copyText(resultsCsv)}
-          />
-
-          <button
-            type="button"
-            onClick={addCurrentToTotal}
-            className="rounded-xl border border-green-400/30 bg-green-500/10 px-4 py-3 font-semibold text-green-300 hover:bg-green-500/20"
-          >
-            Add Current Match to Total
-          </button>
-
-          {savedImports.length > 0 && (
-            <div className="grid gap-2">
-              {savedImports.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
-                >
-                  <span className="text-sm text-zinc-300">{item.label}</span>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSavedImports((current) =>
-                        current.filter((saved) => saved.id !== item.id)
-                      )
-                    }
-                    className="text-sm text-red-300 hover:underline"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <OutputBox
-            title="TOTAL tournament-match.csv Rows"
-            value={totalMatchCsv}
-            onCopy={() => copyText(totalMatchCsv)}
-          />
-
-          <OutputBox
-            title="TOTAL tournament-results.csv Rows"
-            value={totalResultsCsv}
-            onCopy={() => copyText(totalResultsCsv)}
-          />
-        </div>
+          <div className="mt-6">
+</div>
       </section>
 
       <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -617,22 +506,33 @@ function addCurrentToTotal() {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Input label="Match ID" value={matchId} onChange={setMatchId} />
+
           <Input
             label="Tournament Name"
             value={tournamentName}
             onChange={setTournamentName}
           />
+
           <Input label="Round" value={round} onChange={setRound} />
           <Input label="Division" value={division} onChange={setDivision} />
           <Input label="Date" value={date} onChange={setDate} />
-          <Input label="Format" value={format} onChange={setFormat} />
+
+          <Select
+            label="Map Format"
+            value={format}
+            onChange={setFormat}
+            options={MAP_FORMAT_OPTIONS}
+          />
+
           <Input label="Recording" value={recording} onChange={setRecording} />
           <Input label="Host" value={host} onChange={setHost} />
-          <Input
-  label="Match Format"
-  value={matchFormat}
-  onChange={setMatchFormat}
-/>
+
+          <Select
+            label="Match Format"
+            value={matchFormat}
+            onChange={setMatchFormat}
+            options={MATCH_FORMAT_OPTIONS}
+          />
         </div>
       </section>
 
@@ -730,6 +630,45 @@ function addCurrentToTotal() {
           </button>
         </div>
       </section>
+      <section className="mt-8 grid gap-6">
+  <button
+    type="button"
+    onClick={addCurrentToTotal}
+    disabled={!matchCsv || !resultsCsv}
+    className="rounded-xl border border-green-400/30 bg-green-500/10 px-4 py-3 font-semibold text-green-300 hover:bg-green-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    Add Current Match to Live CSV
+  </button>
+
+  {savedImports.length > 0 && (
+    <div className="grid gap-2">
+      {savedImports.map((item) => (
+        <div
+          key={item.id}
+          className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2"
+        >
+          <span className="text-sm text-zinc-300">{item.label}</span>
+
+          <button
+            type="button"
+            onClick={() =>
+              setSavedImports((current) =>
+                current.filter((saved) => saved.id !== item.id)
+              )
+            }
+            className="text-sm text-red-300 hover:underline"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <LiveCsvBox title="Live tournament-match.csv Rows" value={totalMatchCsv} />
+
+  <LiveCsvBox title="Live tournament-results.csv Rows" value={totalResultsCsv} />
+</section>
     </main>
   )
 }
@@ -746,11 +685,42 @@ function Input({
   return (
     <label className="grid gap-2">
       <span className="text-sm font-medium text-zinc-400">{label}</span>
+
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
       />
+    </label>
+  )
+}
+
+function Select({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-medium text-zinc-400">{label}</span>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value} className="bg-black">
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   )
 }
@@ -851,7 +821,6 @@ function ResultBox({
                 updateCategory(mapIndex, side, runIndex, value)
               }
             />
-            
           </div>
         ))}
       </div>
@@ -859,32 +828,21 @@ function ResultBox({
   )
 }
 
-function OutputBox({
+function LiveCsvBox({
   title,
   value,
-  onCopy,
 }: {
   title: string
   value: string
-  onCopy: () => void
 }) {
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">{title}</h2>
-
-        <button
-          type="button"
-          onClick={onCopy}
-          className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm hover:bg-white/[0.1]"
-        >
-          Copy
-        </button>
-      </div>
+      <h2 className="text-2xl font-bold">{title}</h2>
 
       <textarea
         readOnly
         value={value}
+        placeholder="Added matches will appear here..."
         className="mt-4 min-h-40 w-full rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-sm text-zinc-200 outline-none"
       />
     </section>
