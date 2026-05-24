@@ -1,4 +1,4 @@
-import Papa from "papaparse"
+import { getTournamentMatchesFromSupabase } from "./supabase/tournamentMatches"
 
 import type { TournamentMatch } from "./types"
 
@@ -9,17 +9,28 @@ export async function loadTournamentMatches() {
     return cachedTournamentMatches
   }
 
-  const response = await fetch("/tournament-matches.csv")
-  const text = await response.text()
+  const matches = await getTournamentMatchesFromSupabase()
 
-  const parsed = Papa.parse<TournamentMatch>(text, {
-    header: true,
-    skipEmptyLines: true,
-    dynamicTyping: false,
-    transformHeader: (header) => header.trim(),
-  })
+  console.log(
+    "Supabase tournament matches loaded:",
+    matches.length,
+    matches.slice(0, 3)
+  )
 
-  cachedTournamentMatches = parsed.data
+  cachedTournamentMatches = matches.map((match) => ({
+    matchId: match.match_id,
+    tournamentName: match.tournament_name,
+    round: match.round ?? "",
+    division: match.division ?? "",
+    date: match.date ?? "",
+    recording: match.recording ?? "",
+    host: match.host ?? "",
+    matchFormat: match.match_format ?? "",
+    leftPlayer: match.left_player,
+    leftResult: match.left_result ?? "",
+    rightPlayer: match.right_player,
+    rightResult: match.right_result ?? "",
+  }))
 
   return cachedTournamentMatches
 }

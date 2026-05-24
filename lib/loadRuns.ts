@@ -1,4 +1,4 @@
-import Papa from "papaparse"
+import { getRunsFromSupabase } from "@/lib/supabase/runs"
 import type { Run } from "./types"
 
 let cachedRuns: Run[] | null = null
@@ -8,17 +8,19 @@ export async function loadRuns() {
     return cachedRuns
   }
 
-  const response = await fetch("/runs.csv")
-  const text = await response.text()
+  const runs = await getRunsFromSupabase()
 
-  const parsed = Papa.parse(text, {
-    header: true,
-    skipEmptyLines: true,
-    dynamicTyping: false,
-    transformHeader: (header) => header.trim(),
-  })
+  console.log("Supabase runs loaded:", runs.length, runs.slice(0, 3))
 
-  cachedRuns = parsed.data as Run[]
+  cachedRuns = runs.map((run) => ({
+    player: run.player,
+    map: run.map,
+    category: run.category,
+    time: String(run.time),
+    proof: run.proof ?? "",
+    date: run.date ?? "",
+    tag: run.tag ?? "",
+  }))
 
   return cachedRuns
 }
