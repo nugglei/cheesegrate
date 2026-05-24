@@ -1,13 +1,14 @@
 "use client"
 
-import Image from "next/image"
+import DiscordAuthButton from "@/components/DiscordAuthButton"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { getKnownPlayerNames } from "@/lib/players"
 import PlayerSearchAdvanced from "@/components/PlayerSearchAdvanced"
+import { signInWithDiscord } from "@/lib/auth-client"
 
 type SignupMode = "connect" | "create" | null
 
@@ -28,7 +29,7 @@ const centeredMainStyle: CSSProperties = {
 
 export default function SignupPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const [userId, setUserId] = useState<string | null>(null)
   const [discordName, setDiscordName] = useState("")
@@ -103,17 +104,12 @@ export default function SignupPage() {
   }, [supabase])
 
   async function handleDiscordSignup() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "discord",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/signup`,
-      },
-    })
+  const { error } = await signInWithDiscord(supabase, "/signup")
 
-    if (error) {
-      setMessage(error.message)
-    }
+  if (error) {
+    setMessage(error.message)
   }
+}
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -187,37 +183,7 @@ router.refresh()
           Connect to Discord, then link your Speed Race player profile.
         </p>
 
-        <button
-          onClick={handleDiscordSignup}
-          type="button"
-          style={{
-            width: "230px",
-            minHeight: "64px",
-            border: "1px solid #ffffff33",
-            background: "#ffffff12",
-            padding: "12px 24px",
-            borderRadius: "14px",
-            cursor: "pointer",
-            boxShadow: "0 8px 24px #00000033",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Image
-            src="/dc.png"
-            alt="Connect Discord"
-            width={180}
-            height={40}
-            style={{
-              width: "180px",
-              height: "auto",
-              borderRadius: "8px",
-              display: "block",
-            }}
-            priority
-          />
-        </button>
+        <DiscordAuthButton onClick={handleDiscordSignup} alt="Connect Discord" />
 
         <Link
           href="/login"

@@ -1,13 +1,8 @@
 "use client"
 
 import { use, useState } from "react"
-import {
-  categoryPresets,
-  mapCategoryPresets,
-} from "../../../lib/categories"
-import {
-  formatMapName,
-} from "../../../lib/utils"
+import { getCategoriesForMap } from "../../../lib/categories"
+import { formatMapName } from "../../../lib/utils"
 import { useRuns } from "../../../hooks/useRuns"
 import Leaderboard from "../../../components/Leaderboard"
 import MapSearch from "../../../components/MapSearch"
@@ -23,11 +18,7 @@ export default function MapPage({
 
   const mapName = formatMapName(map)
 
-  const preset =
-    mapCategoryPresets[map] ?? "skip"
-
-  const categories =
-    categoryPresets[preset]
+  const categories = getCategoriesForMap(map)
 
   const [category, setCategory] = useState(
     categories[0]

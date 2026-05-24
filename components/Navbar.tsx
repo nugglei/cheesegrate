@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import PlayerProfilePicture from "@/components/PlayerProfilePicture"
 import { createClient } from "@/lib/supabase/client"
 
 const navLinks = [
@@ -76,7 +77,7 @@ export default function Navbar() {
 
         <div
           className="flex items-center gap-6"
-          style={{ marginLeft: "80px" }}
+          style={{ marginLeft: "200px" }}
         >
           {navLinks.map((link) => (
             <Link
@@ -91,9 +92,11 @@ export default function Navbar() {
           {playerName ? (
             <Link
               href="/account"
-              className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15"
+              className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15"
             >
-              {playerName}
+              <PlayerProfilePicture player={playerName} size={24} />
+
+              <span>{playerName}</span>
             </Link>
           ) : (
             <Link

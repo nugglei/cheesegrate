@@ -4,10 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { maps } from "@/lib/maps"
-
-function slugifyMap(map: string) {
-  return map.toLowerCase().replaceAll(" ", "-")
-}
+import { slugify } from "@/lib/slug"
 
 export default function MapDirectoryPage() {
   const [search, setSearch] = useState("")
@@ -27,7 +24,7 @@ export default function MapDirectoryPage() {
   return (
     <main className="mx-auto max-w-7xl px-5 py-8">
       <h1 className="mb-6 text-3xl font-bold">
-        Map Leaderboards
+        Map Directory
       </h1>
 
       <input
@@ -38,13 +35,9 @@ export default function MapDirectoryPage() {
         className="mb-6 w-full max-w-md rounded-lg border border-white/20 bg-black px-3 py-2 text-sm text-white placeholder:text-zinc-500"
       />
 
-      <div className="mb-4 text-sm text-zinc-400">
-        Showing {filteredMaps.length} of {maps.length} maps
-      </div>
-
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
         {filteredMaps.map((map) => {
-          const slug = slugifyMap(map)
+          const slug = slugify(map)
 
           return (
             <Link
@@ -60,7 +53,7 @@ export default function MapDirectoryPage() {
                 className="mb-2 h-auto w-full"
               />
 
-              <div className="text-sm font-medium">
+              <div className="text-sm font-bold">
                 {map}
               </div>
             </Link>

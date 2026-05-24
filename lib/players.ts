@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/client"
+
 function parseCsvRows(csvText: string) {
   const lines = csvText
     .split(/\r?\n/)
@@ -34,13 +36,31 @@ async function getPlayersFromCsv(path: string) {
     .map((player) => player.trim())
 }
 
+async function getPlayersFromProfiles() {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("player_name")
+
+  if (error || !data) {
+    return []
+  }
+
+  return data
+    .map((profile) => profile.player_name)
+    .filter((player): player is string => Boolean(player?.trim()))
+    .map((player) => player.trim())
+}
+
 export async function getKnownPlayerNames() {
-  const [runPlayers, tournamentPlayers] = await Promise.all([
+  const [runPlayers, tournamentPlayers, accountPlayers] = await Promise.all([
     getPlayersFromCsv("/runs.csv"),
     getPlayersFromCsv("/tournament-results.csv"),
+    getPlayersFromProfiles(),
   ])
 
-  return Array.from(new Set([...runPlayers, ...tournamentPlayers])).sort(
-    (a, b) => a.localeCompare(b)
-  )
+  return Array.from(
+    new Set([...runPlayers, ...tournamentPlayers, ...accountPlayers])
+  ).sort((a, b) => a.localeCompare(b))
 }

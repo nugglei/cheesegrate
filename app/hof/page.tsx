@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-
+import { slugify } from "@/lib/slug"
 import CategorySelector from "../../components/CategorySelector"
+import PlayerProfilePicture from "../../components/PlayerProfilePicture"
 import StatSelector from "../../components/StatSelector"
 import TagBubble from "../../components/TagBubble"
 
@@ -22,14 +23,6 @@ import {
   type HoFEntry,
   type HoFStat,
 } from "../../lib/hof"
-
-function slugifyPlayer(player: string) {
-  return encodeURIComponent(player.toLowerCase())
-}
-
-function slugifyMap(map: string) {
-  return map.toLowerCase().replaceAll(" ", "-")
-}
 
 export default function HoFPage() {
   const { runs, loading } = useRuns()
@@ -175,19 +168,27 @@ export default function HoFPage() {
                     </div>
 
                     <div
-                      className={
-                        index <= 2
-                          ? "font-bold"
-                          : "font-medium"
-                      }
+                      className={`
+                        flex items-center gap-3
+                        ${
+                          index <= 2
+                            ? "font-bold"
+                            : "font-medium"
+                        }
+                      `}
                       style={{
                         flex: 1,
                         paddingLeft: "32px",
                         color: playerColor,
                       }}
                     >
+                      <PlayerProfilePicture
+                        player={hofEntry.player}
+                        size={36}
+                      />
+
                       <Link
-                        href={`/player/${slugifyPlayer(hofEntry.player)}`}
+                        href={`/player/${slugify(hofEntry.player)}`}
                         className="hover:underline"
                         onClick={(event) =>
                           event.stopPropagation()
@@ -237,19 +238,19 @@ export default function HoFPage() {
                               }`}
                             >
                               <div className="flex items-center gap-3 font-medium">
-  <img
-    src={`/maps/${slugifyMap(record.map)}.png`}
-    alt={record.map}
-    className="h-6 w-10 rounded object-cover"
-  />
+                                <img
+                                  src={`/maps/${slugify(record.map)}.png`}
+                                  alt={record.map}
+                                  className="h-6 w-10 rounded object-cover"
+                                />
 
-  <Link
-    href={`/lb/${slugifyMap(record.map)}`}
-    className="hover:underline"
-  >
-    {record.map}
-  </Link>
-</div>
+                                <Link
+                                  href={`/lb/${slugify(record.map)}`}
+                                  className="hover:underline"
+                                >
+                                  {record.map}
+                                </Link>
+                              </div>
 
                               <div
                                 className={`font-semibold ${
@@ -265,18 +266,18 @@ export default function HoFPage() {
                               </div>
 
                               {(stat === "ap" || stat === "aap") && (
-  <div
-    className="text-right font-semibold"
-    style={{
-      color:
-        record.placement && record.placement <= 3
-          ? getRankColor(record.placement - 1)
-          : undefined,
-    }}
-  >
-    {record.placement ?? ""}
-  </div>
-)}
+                                <div
+                                  className="text-right font-semibold"
+                                  style={{
+                                    color:
+                                      record.placement && record.placement <= 3
+                                        ? getRankColor(record.placement - 1)
+                                        : undefined,
+                                  }}
+                                >
+                                  {record.placement ?? ""}
+                                </div>
+                              )}
                             </div>
                           )
                         )}

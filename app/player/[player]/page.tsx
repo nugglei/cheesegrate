@@ -3,17 +3,18 @@
 import { useMemo } from "react"
 import { useParams } from "next/navigation"
 import { useRuns } from "@/hooks/useRuns"
+import { slugify } from "@/lib/slug"
 
 export default function PlayerProfilePage() {
   const params = useParams()
   const { runs, loading } = useRuns()
 
-  const playerSlug = decodeURIComponent(String(params.player ?? "")).toLowerCase()
+const playerSlug = String(params.player ?? "")
 
   const playerName = useMemo(() => {
     const matchingRun = runs.find(
-      (run) => run.player.toLowerCase() === playerSlug
-    )
+  (run) => slugify(run.player) === playerSlug
+)
 
     return matchingRun?.player ?? decodeURIComponent(String(params.player ?? ""))
   }, [runs, playerSlug, params.player])

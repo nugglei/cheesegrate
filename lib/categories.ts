@@ -102,3 +102,9 @@ export const mapCategoryPresets: Record<string, keyof typeof categoryPresets> = 
   "cosmic-cliffside": "skip",
   shipwrecked: "skip",
 }
+
+export function getCategoriesForMap(map: string) {
+  const preset = mapCategoryPresets[map] ?? "skip"
+
+  return categoryPresets[preset]
+}

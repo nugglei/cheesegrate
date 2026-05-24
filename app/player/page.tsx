@@ -1,25 +1,35 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
-import { useRuns } from "@/hooks/useRuns"
+import { useEffect, useMemo, useState } from "react"
+import { getKnownPlayerNames } from "@/lib/players"
 import PlayerSearch from "@/components/PlayerSearch"
-
-function slugifyPlayer(player: string) {
-  return encodeURIComponent(player.toLowerCase())
-}
+import PlayerProfilePicture from "@/components/PlayerProfilePicture"
+import { slugify } from "@/lib/slug"
 
 export default function PlayerDirectoryPage() {
-  const { runs, loading } = useRuns()
+  const [players, setPlayers] = useState<string[]>([])
   const [search, setSearch] = useState("")
+  const [loading, setLoading] = useState(true)
 
-  const players = useMemo(() => {
-    const uniquePlayers = Array.from(
-      new Set(runs.map((run) => run.player).filter(Boolean))
-    )
+  useEffect(() => {
+    let isMounted = true
 
-    return uniquePlayers.sort((a, b) => a.localeCompare(b))
-  }, [runs])
+    async function loadPlayers() {
+      const knownPlayers = await getKnownPlayerNames()
+
+      if (!isMounted) return
+
+      setPlayers(knownPlayers)
+      setLoading(false)
+    }
+
+    loadPlayers()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filteredPlayers = useMemo(() => {
     const searchValue = search.trim().toLowerCase()
@@ -34,29 +44,27 @@ export default function PlayerDirectoryPage() {
   if (loading) {
     return (
       <main className="mx-auto max-w-6xl px-5 py-8">
-        <p>Loading players...</p>
+        <p>Loading...</p>
       </main>
     )
   }
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
-      <h1 className="mb-6 text-3xl font-bold">Players</h1>
+      <h1 className="mb-6 text-3xl font-bold">Player Directory</h1>
 
       <PlayerSearch value={search} onChange={setSearch} />
-
-      <div className="mb-4 text-sm text-zinc-400">
-        Showing {filteredPlayers.length} of {players.length} players
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPlayers.map((player) => (
           <Link
             key={player}
-            href={`/player/${slugifyPlayer(player)}`}
-            className="border border-white/10 p-4 text-lg font-medium hover:border-white/30"
+            href={`/player/${slugify(player)}`}
+            className="flex items-center gap-3 border border-white/10 p-4 text-lg font-medium hover:border-white/30"
           >
-            {player}
+            <PlayerProfilePicture player={player} size={44} />
+
+            <span>{player}</span>
           </Link>
         ))}
       </div>
