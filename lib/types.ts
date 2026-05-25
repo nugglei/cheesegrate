@@ -20,7 +20,6 @@ export type TournamentMatch = {
 
 export type TournamentResult = {
   matchId: string
-  set: string
   map: string
   format: string
   seed: string

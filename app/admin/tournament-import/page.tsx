@@ -29,7 +29,6 @@ type LegacyRow = {
   seed: string
   player: string
   map: string
-  set: string
   runs: string[]
 }
 
@@ -188,25 +187,22 @@ useEffect(() => {
     const left = players[0] || { player: "", seed: "" }
     const right = players[1] || { player: "", seed: "" }
 
-    const setGroups = Array.from(
-      new Map(legacyRows.map((row) => [`${row.set}||${row.map}`, row])).keys()
-    )
+const mapNames = Array.from(
+  new Set(legacyRows.map((row) => row.map).filter(Boolean))
+)
 
-    const importedMaps = setGroups.map((key) => {
-      const [set, mapName] = key.split("||")
-      const setRows = legacyRows.filter(
-        (row) => row.set === set && row.map === mapName
-      )
+const importedMaps = mapNames.map((mapName) => {
+  const mapRows = legacyRows.filter((row) => row.map === mapName)
 
-      const leftRow = setRows.find((row) => row.player === left.player)
-      const rightRow = setRows.find((row) => row.player === right.player)
+  const leftRow = mapRows.find((row) => row.player === left.player)
+  const rightRow = mapRows.find((row) => row.player === right.player)
 
-      return {
-        map: mapName,
-        left: makeResultFromRuns(leftRow?.runs || []),
-        right: makeResultFromRuns(rightRow?.runs || []),
-      }
-    })
+  return {
+    map: mapName,
+    left: makeResultFromRuns(leftRow?.runs || []),
+    right: makeResultFromRuns(rightRow?.runs || []),
+  }
+})
 
     setMatchId(firstRow.matchId)
     setTournamentName(firstRow.tournamentName)
@@ -305,7 +301,6 @@ useEffect(() => {
       .flatMap((map, index) => {
         const leftRow = buildResultRow({
           matchId,
-          set: index + 1,
           map: map.map,
           format,
           matchFormat,
@@ -322,7 +317,6 @@ useEffect(() => {
 
         const rightRow = buildResultRow({
           matchId,
-          set: index + 1,
           map: map.map,
           format,
           matchFormat,
@@ -541,7 +535,7 @@ if (!isAdmin) {
 
         <p className="mt-2 text-sm text-zinc-400">
           Expected format: tournament, format, division, round, matchId, seed,
-          player, map, set, then run values.
+          player, map, then run values.
         </p>
 
         <textarea

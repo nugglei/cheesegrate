@@ -25,7 +25,6 @@ export type LegacyRow = {
   seed: string
   player: string
   map: string
-  set: string
   runs: string[]
 }
 
@@ -621,7 +620,6 @@ export function resolveMapResultsForFormat(
 
 export function buildResultRow({
   matchId,
-  set,
   map,
   format,
   matchFormat,
@@ -632,7 +630,6 @@ export function buildResultRow({
   side,
 }: {
   matchId: string
-  set: string | number
   map: string
   format: string
   matchFormat: string
@@ -670,7 +667,6 @@ export function buildResultRow({
 
   return csvRow([
     matchId,
-    set,
     map,
     format,
     player.seed,
@@ -702,7 +698,6 @@ export function parseLegacyRows(rawText: string): LegacyRow[] {
         seed,
         player,
         map,
-        set,
         ...runs
       ] = row
 
@@ -715,7 +710,6 @@ export function parseLegacyRows(rawText: string): LegacyRow[] {
         seed: seed || "",
         player: player || "",
         map: map || "",
-        set: set || "",
         runs: runs.filter((run) => run !== undefined),
       }
     })
@@ -727,8 +721,7 @@ export function parseLegacyRows(rawText: string): LegacyRow[] {
         row.matchId &&
         row.seed &&
         row.player &&
-        row.map &&
-        row.set
+        row.map
     )
 }
 

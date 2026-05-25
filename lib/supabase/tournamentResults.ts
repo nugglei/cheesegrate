@@ -3,7 +3,6 @@ import { supabase } from "./runs"
 export type TournamentResultFromSupabase = {
   id: string
   match_id: string
-  set: string | null
   map: string | null
   format: string | null
   seed: string | null
@@ -46,7 +45,7 @@ export async function getTournamentResultsFromSupabase(): Promise<
     const { data, error } = await supabase
       .from("tournament_results")
       .select(
-        "id, match_id, set, map, format, seed, player, opponent, run1, run1category, run2, run2category, run3, run3category, run4, run4category, run5, run5category, run6, run6category, run7, run7category, run8, run8category, run9, run9category, run10, run10category, average, best, result, created_at"
+        "id, match_id, map, format, seed, player, opponent, run1, run1category, run2, run2category, run3, run3category, run4, run4category, run5, run5category, run6, run6category, run7, run7category, run8, run8category, run9, run9category, run10, run10category, average, best, result, created_at"
       )
       .order("match_id", { ascending: true })
       .range(from, from + pageSize - 1)

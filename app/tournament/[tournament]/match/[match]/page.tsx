@@ -364,10 +364,7 @@ function SetCard({ set }: { set: MatchSet }) {
   const hasDraw = getHasDraw(set.results, winningAverage)
 
   return (
-    <article
-      key={set.set || set.map}
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
-    >
+    <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
       <div className="mb-6 text-center">
         <h2 className="text-4xl font-bold">
           {set.map ? (
@@ -378,14 +375,12 @@ function SetCard({ set }: { set: MatchSet }) {
             "Unknown Map"
           )}
         </h2>
-
-        <p className="mt-2 text-sm text-zinc-400">Map {set.set || "—"}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {set.results.map((result, playerIndex) => (
           <PlayerResultCard
-            key={`${result.matchId}-${result.set}-${result.player}`}
+            key={`${result.matchId}-${result.map}-${result.player}`}
             result={result}
             playerIndex={playerIndex}
             winningAverage={winningAverage}
@@ -470,8 +465,8 @@ export default function TournamentMatchPage({
         {sets.length > 0 && (
           <div className="grid gap-6">
             {sets.map((set) => (
-              <SetCard key={set.set || set.map} set={set} />
-            ))}
+  <SetCard key={set.map || "unknown"} set={set} />
+))}
           </div>
         )}
       </section>
