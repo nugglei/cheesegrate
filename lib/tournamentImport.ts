@@ -12,6 +12,7 @@ export type PlayerMapResult = {
 
 export type MapInput = {
   map: string
+  format?: string
   left: PlayerMapResult
   right: PlayerMapResult
 }
@@ -54,6 +55,7 @@ export function emptyResult(): PlayerMapResult {
 export function emptyMap(): MapInput {
   return {
     map: "",
+    format: "b3o5",
     left: emptyResult(),
     right: emptyResult(),
   }

@@ -197,11 +197,12 @@ const importedMaps = mapNames.map((mapName) => {
   const leftRow = mapRows.find((row) => row.player === left.player)
   const rightRow = mapRows.find((row) => row.player === right.player)
 
-  return {
-    map: mapName,
-    left: makeResultFromRuns(leftRow?.runs || []),
-    right: makeResultFromRuns(rightRow?.runs || []),
-  }
+ return {
+  map: mapName,
+  format: firstRow.format || "b3o5",
+  left: makeResultFromRuns(leftRow?.runs || []),
+  right: makeResultFromRuns(rightRow?.runs || []),
+}
 })
 
     setMatchId(firstRow.matchId)
@@ -229,11 +230,11 @@ const importedMaps = mapNames.map((mapName) => {
       .filter((map) => map.map.trim())
       .map((map) =>
         resolveMapResultsForFormat(
-          map.left.runs,
-          map.right.runs,
-          format,
-          matchFormat
-        )
+  map.left.runs,
+  map.right.runs,
+  map.format || format,
+  matchFormat
+)
       )
 
     const leftResult = resolveMatchResult({
@@ -302,7 +303,7 @@ const importedMaps = mapNames.map((mapName) => {
         const leftRow = buildResultRow({
           matchId,
           map: map.map,
-          format,
+          format: map.format || format,
           matchFormat,
           player: leftPlayer,
           opponent: rightPlayer,
@@ -318,7 +319,7 @@ const importedMaps = mapNames.map((mapName) => {
         const rightRow = buildResultRow({
           matchId,
           map: map.map,
-          format,
+          format: map.format || format,
           matchFormat,
           player: rightPlayer,
           opponent: leftPlayer,
@@ -451,6 +452,26 @@ async function addCurrentToDatabase() {
     )
   }
 
+  function updateMapCategories(mapIndex: number, value: string) {
+  setMaps((current) =>
+    current.map((map, index) => {
+      if (index !== mapIndex) return map
+
+      return {
+        ...map,
+        left: {
+          ...map.left,
+          categories: Array.from({ length: MAX_RUN_COUNT }, () => value),
+        },
+        right: {
+          ...map.right,
+          categories: Array.from({ length: MAX_RUN_COUNT }, () => value),
+        },
+      }
+    })
+  )
+}
+
 function updateBulkRuns(
   mapIndex: number,
   side: "left" | "right",
@@ -575,13 +596,6 @@ if (!isAdmin) {
           <Input label="Division" value={division} onChange={setDivision} />
           <Input label="Date" value={date} onChange={setDate} />
 
-          <Select
-            label="Map Format"
-            value={format}
-            onChange={setFormat}
-            options={MAP_FORMAT_OPTIONS}
-          />
-
           <Input label="Recording" value={recording} onChange={setRecording} />
           <Input label="Host" value={host} onChange={setHost} />
 
@@ -615,28 +629,53 @@ if (!isAdmin) {
             className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
           >
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold">Map {mapIndex + 1}</h2>
+  <h2 className="text-3xl font-bold">
+    {map.map || `Map ${mapIndex + 1}`}
+  </h2>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setMaps((current) =>
-                    current.filter((_, index) => index !== mapIndex)
-                  )
-                }
-                className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
-              >
-                Remove
-              </button>
-            </div>
+  <button
+    type="button"
+    onClick={() =>
+      setMaps((current) =>
+        current.filter((_, index) => index !== mapIndex)
+      )
+    }
+    className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"
+  >
+    Remove
+  </button>
+</div>
 
-            <div className="mt-4">
-              <Input
-                label="Map Name"
-                value={map.map}
-                onChange={(value) => updateMap(mapIndex, { map: value })}
-              />
-            </div>
+<div className="mt-4 grid gap-4 md:grid-cols-3">
+  <label className="grid gap-2 md:col-span-2">
+    <span className="text-sm font-medium text-zinc-400">Map Name</span>
+
+    <input
+      value={map.map}
+      onChange={(event) => updateMap(mapIndex, { map: event.target.value })}
+      className="rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-2xl font-bold text-white outline-none focus:border-white/30"
+    />
+  </label>
+
+  <Select
+    label="Map Format"
+    value={map.format || format}
+    onChange={(value) => updateMap(mapIndex, { format: value })}
+    options={MAP_FORMAT_OPTIONS}
+  />
+
+  <EditableSelect
+    label="Quick Set Map Categories"
+    value=""
+    placeholder="Choose or type category..."
+    onChange={(value) => {
+      if (value.trim()) {
+        updateMapCategories(mapIndex, value)
+      }
+    }}
+    options={CATEGORY_OPTIONS}
+  />
+</div>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <ResultBox
@@ -761,6 +800,51 @@ function DatalistInput({
   )
 }
 
+function EditableSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "",
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: string[]
+  placeholder?: string
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-medium text-zinc-400">{label}</span>
+
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <input
+          value={value}
+          placeholder={placeholder}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-w-0 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
+        />
+
+        <select
+          value=""
+          onChange={(event) => onChange(event.target.value)}
+          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
+        >
+          <option value="" className="bg-black">
+            Options
+          </option>
+
+          {options.map((option) => (
+            <option key={option} value={option} className="bg-black">
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+    </label>
+  )
+}
+
 function Select({
   label,
   value,
@@ -880,7 +964,7 @@ function ResultBox({
               onChange={(value) => updateRun(mapIndex, side, runIndex, value)}
             />
 
-            <DatalistInput
+            <EditableSelect
   label="Category"
   value={result.categories[runIndex] || DEFAULT_CATEGORY}
   onChange={(value) =>

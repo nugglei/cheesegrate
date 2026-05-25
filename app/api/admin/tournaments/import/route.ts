@@ -18,7 +18,6 @@ type TournamentMatchInsert = {
 
 type TournamentResultInsert = {
   match_id: string
-  set: string | null
   map: string | null
   format: string | null
   seed: string | null
@@ -115,7 +114,6 @@ function parseMatchRow(matchCsv: string): TournamentMatchInsert {
 function parseResultRow(line: string): TournamentResultInsert {
   const [
     matchId,
-    set,
     map,
     format,
     seed,
@@ -148,7 +146,6 @@ function parseResultRow(line: string): TournamentResultInsert {
 
   return {
     match_id: matchId,
-    set: emptyToNull(set),
     map: emptyToNull(map),
     format: emptyToNull(format),
     seed: emptyToNull(seed),
