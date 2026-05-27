@@ -24,6 +24,12 @@ export async function getKnownPlayerNames() {
     getPlayersFromTable("profiles", "player_name"),
   ])
 
+console.log({
+  runPlayers,
+  tournamentPlayers,
+  accountPlayers,
+})
+
   return Array.from(
     new Set([...runPlayers, ...tournamentPlayers, ...accountPlayers])
   ).sort((a, b) => a.localeCompare(b))

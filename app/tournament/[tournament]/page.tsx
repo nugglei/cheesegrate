@@ -33,10 +33,6 @@ export default function TournamentDetailPage({
   if (tournamentMatches.length === 0) {
     return (
       <main className="mx-auto max-w-5xl px-5 py-8">
-        <Link href="/tournament" className="text-sm text-zinc-400 underline">
-          Back to tournaments
-        </Link>
-
         <h1 className="mt-4 text-4xl font-bold">Tournament not found</h1>
       </main>
     )
@@ -44,11 +40,7 @@ export default function TournamentDetailPage({
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-8">
-      <Link href="/tournament" className="text-sm text-zinc-400 underline">
-        Back to tournaments
-      </Link>
-
-      <div className="mt-6 mb-8">
+     <div className="mt-6 mb-8">
         <h1 className="text-4xl font-bold">{tournamentName}</h1>
 
         <p className="mt-2 text-zinc-400">

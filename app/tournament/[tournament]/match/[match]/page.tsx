@@ -179,12 +179,6 @@ columnGap: "12px",
           <ScoreBubble score={rightScore} opponentScore={leftScore} />
         </div>
       </div>
-
-      {drawScore > 0 && (
-        <div className="mt-2 text-sm font-medium text-zinc-400">
-          {drawScore} {drawScore === 1 ? "draw" : "draws"}
-        </div>
-      )}
     </div>
   )
 }
