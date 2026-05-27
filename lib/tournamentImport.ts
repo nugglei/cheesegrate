@@ -13,6 +13,7 @@ export type PlayerMapResult = {
 export type MapInput = {
   map: string
   format?: string
+  quickCategory?: string
   left: PlayerMapResult
   right: PlayerMapResult
 }
@@ -56,6 +57,7 @@ export function emptyMap(): MapInput {
   return {
     map: "",
     format: "b3o5",
+    quickCategory: "",
     left: emptyResult(),
     right: emptyResult(),
   }
