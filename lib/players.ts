@@ -8,8 +8,11 @@ async function getPlayersFromTable(table: string, column: string) {
   const { data, error } = await supabase.from(table).select(column)
 
   if (error || !data) {
+    console.error(`Failed to load players from ${table}.${column}`, error)
     return []
   }
+
+  console.log(`${table}.${column}`, data.length)
 
   return (data as unknown as PlayerRow[])
     .map((row) => row[column])
@@ -24,11 +27,11 @@ export async function getKnownPlayerNames() {
     getPlayersFromTable("profiles", "player_name"),
   ])
 
-console.log({
-  runPlayers,
-  tournamentPlayers,
-  accountPlayers,
-})
+  console.log({
+    runPlayers,
+    tournamentPlayers,
+    accountPlayers,
+  })
 
   return Array.from(
     new Set([...runPlayers, ...tournamentPlayers, ...accountPlayers])
