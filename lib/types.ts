@@ -16,6 +16,10 @@ export type TournamentMatch = {
   date: string
   recording: string
   host: string
+  leftPlayer: string
+  leftResult: string
+  rightPlayer: string
+  rightResult: string
 }
 
 export type TournamentResult = {

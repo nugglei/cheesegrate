@@ -77,51 +77,6 @@ function MatchMeta({
   )
 }
 
-function PlayerVsPlayer({
-  leftPlayer,
-  rightPlayer,
-}: {
-  leftPlayer: MatchPlayer
-  rightPlayer: MatchPlayer
-}) {
-  return (
-    <div
-      className="mt-8 flex items-center justify-center text-white"
-      style={{ gap: "48px" }}
-    >
-      <span className="inline-flex items-center">
-        <span
-          className="text-sm font-medium text-zinc-500"
-          style={{ marginRight: "18px", transform: "translateY(4px)" }}
-        >
-          {leftPlayer.seed || "—"}
-        </span>
-
-        <PlayerNameLink
-          player={leftPlayer.player}
-          className="text-3xl font-bold hover:underline"
-        />
-      </span>
-
-      <span className="text-xl font-semibold text-zinc-400">VS</span>
-
-      <span className="inline-flex items-center">
-        <PlayerNameLink
-          player={rightPlayer.player}
-          className="text-3xl font-bold hover:underline"
-        />
-
-        <span
-          className="text-sm font-medium text-zinc-500"
-          style={{ marginLeft: "18px", transform: "translateY(4px)" }}
-        >
-          {rightPlayer.seed || "—"}
-        </span>
-      </span>
-    </div>
-  )
-}
-
 function ScoreBubble({
   score,
   opponentScore,
@@ -138,6 +93,54 @@ function ScoreBubble({
   )
 }
 
+function PlayerVsPlayer({
+  leftPlayer,
+  rightPlayer,
+}: {
+  leftPlayer: MatchPlayer
+  rightPlayer: MatchPlayer
+}) {
+  return (
+    <div
+      className="mt-8 grid items-start justify-center text-white"
+      style={{
+        gridTemplateColumns: "40px 85px 60px 85px 40px",
+columnGap: "12px",
+      }}
+    >
+      <div />
+
+      <div className="flex flex-col items-center">
+        <PlayerNameLink
+          player={leftPlayer.player}
+          className="text-3xl font-bold hover:underline"
+        />
+
+        <span className="mt-2 text-sm font-medium text-zinc-500">
+          {leftPlayer.seed || ""}
+        </span>
+      </div>
+
+      <div className="flex justify-center" style={{ paddingTop: "10px" }}>
+  <span className="text-sm font-bold text-zinc-400">VS</span>
+</div>
+
+      <div className="flex flex-col items-center">
+        <PlayerNameLink
+          player={rightPlayer.player}
+          className="text-3xl font-bold hover:underline"
+        />
+
+        <span className="mt-2 text-sm font-medium text-zinc-500">
+          {rightPlayer.seed || ""}
+        </span>
+      </div>
+
+      <div />
+    </div>
+  )
+}
+
 function MatchScoreboard({
   leftScore,
   rightScore,
@@ -148,34 +151,37 @@ function MatchScoreboard({
   drawScore: number
 }) {
   return (
-    <div
-      className="flex items-center justify-center"
-      style={{ marginTop: "6px" }}
-    >
-      <div className="flex items-center gap-5">
-        <ScoreBubble score={leftScore} opponentScore={rightScore} />
-
-        <span className="text-5xl font-black text-white">{leftScore}</span>
-      </div>
-
+    <div className="flex flex-col items-center" style={{ marginTop: "10px" }}>
       <div
-        className="text-4xl font-black text-zinc-500"
-        style={{ marginLeft: "40px", marginRight: "40px" }}
+        className="grid items-center justify-center"
+        style={{
+          gridTemplateColumns: "40px 85px 60px 85px 40px",
+columnGap: "12px",
+        }}
       >
-        -
-      </div>
+        <div className="flex justify-center">
+          <ScoreBubble score={leftScore} opponentScore={rightScore} />
+        </div>
 
-      <div className="flex items-center gap-5">
-        <span className="text-5xl font-black text-white">{rightScore}</span>
+        <span className="text-center text-5xl font-bold text-white">
+          {leftScore}
+        </span>
 
-        <ScoreBubble score={rightScore} opponentScore={leftScore} />
+        <span className="text-center text-4xl font-bold text-zinc-500">
+          –
+        </span>
+
+        <span className="text-center text-5xl font-bold text-white">
+          {rightScore}
+        </span>
+
+        <div className="flex justify-center">
+          <ScoreBubble score={rightScore} opponentScore={leftScore} />
+        </div>
       </div>
 
       {drawScore > 0 && (
-        <div
-          className="text-sm font-medium text-zinc-400"
-          style={{ marginLeft: "32px" }}
-        >
+        <div className="mt-2 text-sm font-medium text-zinc-400">
           {drawScore} {drawScore === 1 ? "draw" : "draws"}
         </div>
       )}
@@ -401,15 +407,33 @@ export default function TournamentMatchPage({
   const { matches, results, loading } = useTournamentData()
 
   const matchData = matches.find(
-    (item) =>
-      slugify(item.tournamentName) === tournament && item.matchId === match
-  )
+  (item) =>
+    slugify(item.tournamentName) === tournament &&
+    String(item.matchId).trim() === String(match).trim()
+)
 
-  const matchResults = results.filter((result) => result.matchId === match)
+const currentMatchId = String(matchData?.matchId ?? match).trim().toLowerCase()
 
-  const matchPlayers = getMatchPlayers(matchResults)
-  const leftPlayer = matchPlayers[0]
-  const rightPlayer = matchPlayers[1]
+const matchResults = results.filter(
+  (result) => String(result.matchId).trim().toLowerCase() === currentMatchId
+)
+
+  const matchPlayers =
+  matchData
+    ? [
+        {
+          player: matchData.leftPlayer,
+          seed: "",
+        },
+        {
+          player: matchData.rightPlayer,
+          seed: "",
+        },
+      ]
+    : getMatchPlayers(matchResults)
+
+const leftPlayer = matchPlayers[0]
+const rightPlayer = matchPlayers[1]
 
   const sets = getMatchSets(matchResults)
   const { leftScore, rightScore, drawScore } = getMatchScore(
@@ -443,7 +467,7 @@ export default function TournamentMatchPage({
       <MatchHeader
         tournament={tournament}
         tournamentName={matchData.tournamentName}
-        round={matchData.round}
+        round={matchData.round ? `Round ${matchData.round}` : ""}
         division={matchData.division}
         date={matchData.date}
         host={matchData.host}

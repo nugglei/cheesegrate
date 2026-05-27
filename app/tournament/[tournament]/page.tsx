@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { use } from "react"
-
+import TagBubble from "@/components/TagBubble"
 import { useTournamentData } from "../../../hooks/useTournamentData"
 import { slugify } from "../../../lib/slug"
 
@@ -64,34 +65,50 @@ export default function TournamentDetailPage({
             className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:bg-white/[0.06]"
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">
-                  {match.round || "Untitled Match"}
-                </h2>
+<div>
+  <h2 className="text-2xl font-bold">
+    {match.leftPlayer || "TBD"} VS {match.rightPlayer || "TBD"}
+  </h2>
 
-                <div className="mt-3 flex flex-wrap gap-2 text-sm text-zinc-300">
-                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">
-                    {match.division || "No division"}
-                  </span>
+  <div className="mt-3 flex flex-wrap items-center gap-2">
+    {match.round ? (
+      <TagBubble tone="blue" size="md">
+        Round {match.round}
+      </TagBubble>
+    ) : null}
 
-                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">
-                    {match.date || "No date"}
-                  </span>
-                </div>
-              </div>
+    {match.division ? (
+      <TagBubble tone="purple" size="md">
+        {match.division}
+      </TagBubble>
+    ) : null}
 
-              <div className="shrink-0">
-                {match.recording ? (
-                  <span className="inline-flex rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-200">
-                    Recording
-                  </span>
-                ) : (
-                  <span className="inline-flex rounded-lg border border-white/10 px-4 py-2 text-sm text-zinc-600">
-                    No recording
-                  </span>
-                )}
-              </div>
-            </div>
+    {match.date ? (
+      <TagBubble tone="white" size="md">
+        {match.date}
+      </TagBubble>
+    ) : null}
+
+    {match.recording ? (
+      <a
+        href={match.recording}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Watch recording"
+        title="Watch recording"
+        className="inline-flex items-center"
+      >
+        <Image
+          src="/video.png"
+          alt="Watch recording"
+          width={22}
+          height={22}
+        />
+      </a>
+    ) : null}
+  </div>
+</div>
+</div>
           </Link>
         ))}
       </div>

@@ -646,14 +646,14 @@ if (!isAdmin) {
   </button>
 </div>
 
-<div className="mt-4 grid gap-4 md:grid-cols-3">
+<div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr)_180px_220px]">
   <label className="grid gap-2 md:col-span-2">
     <span className="text-sm font-medium text-zinc-400">Map Name</span>
 
     <input
       value={map.map}
       onChange={(event) => updateMap(mapIndex, { map: event.target.value })}
-      className="rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-2xl font-bold text-white outline-none focus:border-white/30"
+      className="min-w-0 max-w-full truncate rounded-lg border border-white/10 bg-black/30 px-2 py-2 text-sm text-white outline-none focus:border-white/30"
     />
   </label>
 
@@ -826,20 +826,19 @@ function EditableSelect({
         />
 
         <select
-          value=""
-          onChange={(event) => onChange(event.target.value)}
-          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/30"
-        >
-          <option value="" className="bg-black">
-            Options
-          </option>
+  value=""
+  onChange={(event) => onChange(event.target.value)}
+  className="h-10 w-10 rounded-lg border border-white/10 bg-black/30 px-2 text-center text-white outline-none focus:border-white/30"
+>
+  <option value="" className="bg-black">
+  </option>
 
-          {options.map((option) => (
-            <option key={option} value={option} className="bg-black">
-              {option}
-            </option>
-          ))}
-        </select>
+  {options.map((option) => (
+    <option key={option} value={option} className="bg-black">
+      {option}
+    </option>
+  ))}
+</select>
       </div>
     </label>
   )
