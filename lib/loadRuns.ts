@@ -1,4 +1,7 @@
-import { getRunsFromSupabase } from "@/lib/supabase/runs"
+import {
+  getRunsFromSupabase,
+  getTournamentRunsFromSupabase,
+} from "@/lib/supabase/runs"
 import type { Run } from "./types"
 
 let cachedRuns: Run[] | null = null
@@ -8,7 +11,12 @@ export async function loadRuns() {
     return cachedRuns
   }
 
-  const runs = await getRunsFromSupabase()
+  const [submittedRuns, tournamentRuns] = await Promise.all([
+  getRunsFromSupabase(),
+  getTournamentRunsFromSupabase(),
+])
+
+const runs = [...submittedRuns, ...tournamentRuns]
 
   console.log("Supabase runs loaded:", runs.length, runs.slice(0, 3))
 

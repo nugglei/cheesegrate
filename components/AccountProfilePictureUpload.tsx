@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import PlayerProfilePicture from "@/components/PlayerProfilePicture"
 
 type AccountProfilePictureUploadProps = {
   userId: string
@@ -12,7 +11,6 @@ type AccountProfilePictureUploadProps = {
 
 export default function AccountProfilePictureUpload({
   userId,
-  playerName,
   initialSrc,
 }: AccountProfilePictureUploadProps) {
   const supabase = createClient()
@@ -24,7 +22,6 @@ export default function AccountProfilePictureUpload({
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-
     if (!file) return
 
     setIsUploading(true)
@@ -34,9 +31,7 @@ export default function AccountProfilePictureUpload({
 
     const { error: uploadError } = await supabase.storage
       .from("profile-pictures")
-      .upload(filePath, file, {
-        upsert: true,
-      })
+      .upload(filePath, file, { upsert: true })
 
     if (uploadError) {
       alert(uploadError.message)
@@ -62,6 +57,7 @@ export default function AccountProfilePictureUpload({
     }
 
     setSrc(publicUrl)
+    window.dispatchEvent(new Event("profile-updated"))
     setIsUploading(false)
   }
 
@@ -80,23 +76,20 @@ export default function AccountProfilePictureUpload({
     }
 
     setSrc("")
+    window.dispatchEvent(new Event("profile-updated"))
     setIsUploading(false)
   }
 
   return (
-    <div style={{ display: "grid", gap: "12px" }}>
-      <label style={{ cursor: "pointer", display: "inline-flex", width: "36px" }}>
-        <PlayerProfilePicture player={playerName} src={src} size={36} />
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={handleUpload}
-          disabled={isUploading}
-          style={{ display: "none" }}
-        />
-      </label>
+    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={handleUpload}
+        disabled={isUploading}
+        style={{ display: "none" }}
+      />
 
       <button
         type="button"

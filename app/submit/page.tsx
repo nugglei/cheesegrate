@@ -9,9 +9,13 @@ import TagBubble from "@/components/TagBubble"
 import { useRuns } from "@/hooks/useRuns"
 import { getProjectedRank } from "@/lib/leaderboards"
 import { getRankColor } from "@/lib/rankColors"
+import { useRouter } from "next/navigation"
+import PlayerSearchAdvanced from "@/components/PlayerSearchAdvanced"
+import { getKnownPlayerNames } from "@/lib/players"
 
 export default function SubmitPage() {
   const supabase = createClient()
+  const router = useRouter()
 const { runs, loading: runsLoading } = useRuns()
   const [player, setPlayer] = useState("")
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null)
@@ -28,41 +32,87 @@ const [isMobile, setIsMobile] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState("")
 const [egtTime, setEgtTime] = useState("")
+const [players, setPlayers] = useState<string[]>([])
+
 const projectedRank = getProjectedRank(runs, map, category, time)
 const projectedRankColor =
   projectedRank !== null ? getRankColor(projectedRank - 1) : "#ffffff"
 
-
 const isDoubleSubmission =
   category === "Skip IGT + EGT" || category === "Skipless IGT + EGT"
+
+const igtProjectedRank = isDoubleSubmission
+  ? getProjectedRank(
+      runs,
+      map,
+      category === "Skip IGT + EGT" ? "Skip IGT" : "Skipless IGT",
+      time
+    )
+  : projectedRank
+
+const egtProjectedRank = isDoubleSubmission
+  ? getProjectedRank(
+      runs,
+      map,
+      category === "Skip IGT + EGT" ? "Skip EGT" : "Skipless EGT",
+      egtTime
+    )
+  : null
+
+const discordProjectedRank = isDoubleSubmission
+  ? `${igtProjectedRank}/${egtProjectedRank}`
+  : projectedRank
   
-  useEffect(() => {
-    async function loadPlayer() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+useEffect(() => {
+  async function loadPlayer() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-      if (!user) {
-        setPlayer("")
-        setIsAdmin(false)
-        setIsLoadingPlayer(false)
-        return
-      }
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("player_name, role, profile_picture_url")
-        .eq("id", user.id)
-        .single()
-
-      setPlayer(data?.player_name ?? "")
-      setIsAdmin(data?.role === "admin")
-      setProfilePictureUrl(data?.profile_picture_url ?? null)
-      setIsLoadingPlayer(false)
+    if (!user) {
+      router.push("/login")
+      return
     }
 
-    loadPlayer()
-  }, [supabase])
+    const { data } = await supabase
+      .from("profiles")
+      .select("player_name, role, profile_picture_url")
+      .eq("id", user.id)
+      .single()
+
+    setPlayer(data?.player_name ?? "")
+    setProfilePictureUrl(data?.profile_picture_url ?? null)
+    setIsAdmin(data?.role === "admin")
+    setIsLoadingPlayer(false)
+  }
+
+  loadPlayer()
+}, [supabase, router])
+
+useEffect(() => {
+  async function loadPlayers() {
+    const playerNames = await getKnownPlayerNames()
+    setPlayers(playerNames)
+  }
+
+  loadPlayers()
+}, [])
+
+useEffect(() => {
+  async function loadSelectedPlayerProfilePicture() {
+    if (!isAdmin || !player.trim()) return
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("profile_picture_url")
+      .eq("player_name", player.trim())
+      .maybeSingle()
+
+    setProfilePictureUrl(data?.profile_picture_url ?? null)
+  }
+
+  loadSelectedPlayerProfilePicture()
+}, [isAdmin, player, supabase])
 
 async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault()
@@ -79,7 +129,7 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     map: map.trim(),
     proof: proof.trim(),
     date: date || null,
-    tags: isMobile ? "Mobile" : null,
+    tag: isMobile ? "Mobile" : null,
     notes: notes.trim() || null,
     status: "pending",
     submission_group: submissionGroup,
@@ -130,6 +180,23 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     return
   }
 
+  await fetch("/api/discord/submission", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    player: player.trim(),
+    map: map.trim(),
+    category,
+    time: isDoubleSubmission ? `${time}/${egtTime}` : time.trim(),
+    proof: proof.trim(),
+    date: date || null,
+    tag: isMobile ? "Mobile" : null,
+    projectedRank: discordProjectedRank,
+  }),
+})
+
  setMessage(
   isDoubleSubmission
     ? `Submitted ${map} ${time} IGT + ${egtTime} EGT`
@@ -175,19 +242,16 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 />
 
             {isAdmin ? (
-              <input
-                value={player}
-                onChange={(event) => setPlayer(event.target.value)}
-                required
-                className="min-w-0 flex-1 bg-transparent text-sm font-medium text-white outline-none"
-              />
-            ) : (
-              <span className="text-sm font-medium text-white">
-                {isLoadingPlayer
-                  ? "Loading player..."
-                  : player || "No player linked"}
-              </span>
-            )}
+  <PlayerSearchAdvanced
+    value={player}
+    onChange={setPlayer}
+    players={players}
+  />
+) : (
+  <span className="text-sm font-medium text-white">
+    {isLoadingPlayer ? "Loading player..." : player || "No player linked"}
+  </span>
+)}
           </div>
         </label>
 
@@ -319,7 +383,7 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     color: "#86efac",
   }}
 >
-  {isSubmitting ? "Submitting..." : "Submit Time"}
+  {isSubmitting ? "Submitting..." : "Submit Run"}
 </button>
 
         {message ? <p className="text-sm text-zinc-300">{message}</p> : null}

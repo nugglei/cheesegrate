@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { maps } from "../lib/maps"
@@ -16,6 +16,9 @@ type MapSearchProps = {
 
 export default function MapSearch({ selectedMap = "", onSelectMap }: MapSearchProps) {
   const [search, setSearch] = useState(selectedMap)
+  useEffect(() => {
+  setSearch(selectedMap)
+}, [selectedMap])
   const [isOpen, setIsOpen] = useState(false)
 
   const filteredMaps = maps

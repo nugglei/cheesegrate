@@ -30,6 +30,7 @@ export default function LeaderboardRow({
 }: Props) {
   const [hovered, setHovered] = useState(false)
   const isMobile = tag?.toLowerCase() === "mobile"
+const isTournament = tag?.toLowerCase() === "tournament"
 
   const topThree = rank <= 3
 
@@ -113,10 +114,16 @@ export default function LeaderboardRow({
         </span>
 
         {isMobile && (
-          <span className="ml-4">
-            <TagBubble>Mobile</TagBubble>
-          </span>
-        )}
+  <span className="ml-4">
+    <TagBubble>Mobile</TagBubble>
+  </span>
+)}
+
+{isTournament && (
+  <span className="ml-4">
+    <TagBubble tone="purple">Tournament</TagBubble>
+  </span>
+)}
 
         {hovered && (
           <div className="absolute left-0 top-7 border rounded-lg bg-black text-white text-sm px-2 py-1 whitespace-nowrap z-50">
