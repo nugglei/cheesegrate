@@ -291,9 +291,11 @@ function RunCard({
         : { right: "calc(50% + 65px)" }
     }
   >
-    <TagBubble tone={categoryTone} size="sm">
-      {displayCategoryLabel}
-    </TagBubble>
+    <span className="inline-flex items-center">
+  <TagBubble tone={categoryTone} size="sm">
+    {displayCategoryLabel}
+  </TagBubble>
+</span>
   </div>
 )}
 

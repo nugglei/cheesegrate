@@ -178,3 +178,24 @@ export function getWorldRecordsForCategory(
 } => record !== null
     )   
 }
+
+export function getProjectedRank(
+  runs: Run[],
+  mapName: string,
+  category: string,
+  submittedTime: string
+) {
+  const time = Number(submittedTime)
+
+  if (!mapName || !category || !submittedTime || isNaN(time)) {
+    return null
+  }
+
+  const leaderboardRuns = getLeaderboardRuns(runs, mapName, category)
+
+  const fasterRuns = leaderboardRuns.filter(
+    (run) => Number(run.time) < time
+  )
+
+  return fasterRuns.length + 1
+}

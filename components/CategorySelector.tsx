@@ -10,15 +10,14 @@ export default function CategorySelector({
   setCategory,
 }: Props) {
   return (
-    <div className="flex gap-2 mb-6 flex-wrap">
+    <div className="mb-6 flex flex-wrap gap-2">
       {categories.map((cat) => (
         <button
           key={cat}
+          type="button"
           onClick={() => setCategory(cat)}
-          className={`border rounded-lg px-4 py-2 ${
-            category === cat
-              ? "bg-white text-black"
-              : "bg-black text-white"
+          className={`rounded-lg border px-4 py-2 ${
+            category === cat ? "bg-white text-black" : "bg-black text-white"
           }`}
         >
           {cat}

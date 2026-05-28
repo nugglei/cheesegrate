@@ -14,6 +14,7 @@ const navLinks = [
   { href: "/hof", label: "Hall of Fame" },
   { href: "/player", label: "Players" },
   { href: "/tournament", label: "Tournaments" },
+  { href: "/submit", label: "Submit Run" },
 ]
 
 export default function Navbar() {
@@ -83,15 +84,20 @@ export default function Navbar() {
           style={{ marginLeft: "200px" }}
         >
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-zinc-300 hover:text-white"
-            >
-              {link.label}
-            </Link>
-          ))}
+  <Link
+    key={link.href}
+    href={link.href}
+    className={
+      link.href === "/submit"
+        ? "rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15"
+        : "text-sm font-medium text-zinc-300 hover:text-white"
+    }
+  >
+    {link.label}
+  </Link>
+))}
 
+<div style={{ marginLeft: "24px" }}>
           {playerName ? (
             <Link
               href="/account"
@@ -113,6 +119,7 @@ export default function Navbar() {
               Log in
             </Link>
           )}
+        </div>
         </div>
       </nav>
     </header>

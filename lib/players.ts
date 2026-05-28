@@ -4,17 +4,30 @@ type PlayerRow = Record<string, string | null>
 
 async function getPlayersFromTable(table: string, column: string) {
   const supabase = createClient()
+  const allRows: PlayerRow[] = []
+  const batchSize = 1000
 
-  const { data, error } = await supabase.from(table).select(column)
+  let from = 0
+  let hasMoreRows = true
 
-  if (error || !data) {
-    console.error(`Failed to load players from ${table}.${column}`, error)
-    return []
+  while (hasMoreRows) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(column)
+      .range(from, from + batchSize - 1)
+
+    if (error || !data) {
+      console.error(`Failed to load players from ${table}.${column}`, error)
+      break
+    }
+
+    allRows.push(...(data as unknown as PlayerRow[]))
+
+    hasMoreRows = data.length === batchSize
+    from += batchSize
   }
 
-  console.log(`${table}.${column}`, data.length)
-
-  return (data as unknown as PlayerRow[])
+  return allRows
     .map((row) => row[column])
     .filter((player): player is string => Boolean(player?.trim()))
     .map((player) => player.trim())
