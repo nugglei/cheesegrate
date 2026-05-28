@@ -14,6 +14,7 @@ export default function SubmitPage() {
   const supabase = createClient()
 const { runs, loading: runsLoading } = useRuns()
   const [player, setPlayer] = useState("")
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null)
   const [isLoadingPlayer, setIsLoadingPlayer] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -50,12 +51,13 @@ const isDoubleSubmission =
 
       const { data } = await supabase
         .from("profiles")
-        .select("player_name, role")
+        .select("player_name, role, profile_picture_url")
         .eq("id", user.id)
         .single()
 
       setPlayer(data?.player_name ?? "")
       setIsAdmin(data?.role === "admin")
+      setProfilePictureUrl(data?.profile_picture_url ?? null)
       setIsLoadingPlayer(false)
     }
 
@@ -128,7 +130,11 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     return
   }
 
-  setMessage(`Submitted ${map} ${time} ${category}`)
+ setMessage(
+  isDoubleSubmission
+    ? `Submitted ${map} ${time} IGT + ${egtTime} EGT`
+    : `Submitted ${map} ${time} ${category}`
+)
 
   setMap("")
   setCategory("")
@@ -162,7 +168,11 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
           <span className="text-sm font-medium text-zinc-300">Player</span>
 
           <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/30 px-3 py-2">
-            <PlayerProfilePicture player={player} size={36} />
+           <PlayerProfilePicture
+  player={player}
+  src={profilePictureUrl ?? undefined}
+  size={36}
+/>
 
             {isAdmin ? (
               <input
