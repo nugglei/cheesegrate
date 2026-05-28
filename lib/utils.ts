@@ -9,9 +9,17 @@ export function formatTime(time: string, category: string) {
 }
 
 export function formatMapName(map: string) {
+  const lowercaseWords = ["of", "the", "and", "in", "on", "at", "to", "for"]
+
   return map
     .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word, index) => {
+      if (index !== 0 && lowercaseWords.includes(word.toLowerCase())) {
+        return word.toLowerCase()
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    })
     .join(" ")
 }
 

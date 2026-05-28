@@ -33,7 +33,7 @@ export function getLeaderboardRuns(
       .filter(
         (run) =>
           typeof run?.map === "string" &&
-          run.map.trim() === mapName
+          run.map.trim().toLowerCase() === mapName.trim().toLowerCase()
       )
       .filter(
         (run) =>

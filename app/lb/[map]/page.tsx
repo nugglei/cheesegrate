@@ -18,7 +18,7 @@ export default function MapPage({
 
   const mapName = formatMapName(map)
 
-  const categories = getCategoriesForMap(map)
+  const categories = getCategoriesForMap(mapName)
 
   const [category, setCategory] = useState(
     categories[0]
@@ -27,10 +27,10 @@ export default function MapPage({
   const { runs, loading } = useRuns()
 
   const filteredRuns = getLeaderboardRuns(
-    runs,
-    mapName,
-    category
-  )
+  runs,
+  mapName.toLowerCase(),
+  category
+)
 
   return (
 <main

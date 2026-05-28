@@ -131,10 +131,10 @@ export function getHoFValueLabel(stat: HoFStat) {
   return "Total"
 }
 
-export function formatHoFRank(index: number, stat: HoFStat) {
-  if (stat === "ap" && index === 0) {
+export function formatHoFRank(rank: number, stat: HoFStat) {
+  if (stat === "ap" && rank === 1) {
     return "Champion"
   }
 
-  return index + 1
+  return rank
 }

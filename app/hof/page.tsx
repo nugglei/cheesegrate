@@ -151,8 +151,11 @@ export default function HoFPage() {
               (map) => !hofEntry.mapSet.has(map)
             )
 
-            const rankColor = getRankColor(index, "#737373")
-            const playerColor = getRankColor(index)
+            const rank =
+  entries.findIndex((entry) => entry.value === hofEntry.value) + 1
+
+const rankColor = getRankColor(rank - 1, "#737373")
+const playerColor = getRankColor(rank - 1)
 
             return (
               <div key={hofEntry.player} className="border-b border-neutral-900">
@@ -171,12 +174,15 @@ export default function HoFPage() {
                       color: rankColor,
                     }}
                   >
-                    {formatHoFRank(index, stat)}
+                    {formatHoFRank(
+  entries.findIndex((entry) => entry.value === hofEntry.value) + 1,
+  stat
+)}  
                   </div>
 
                   <div
                     className={`flex items-center gap-3 ${
-                      index <= 2 ? "font-bold" : "font-medium"
+                      rank <= 3 ? "font-bold" : "font-medium"
                     }`}
                     style={{
                       flex: 1,
@@ -201,7 +207,7 @@ export default function HoFPage() {
 
                   <div
                     className={`text-right ${
-                      index <= 2 ? "font-bold" : "font-semibold"
+                      rank <= 3 ? "font-bold" : "font-semibold"
                     }`}
                     style={{
                       width: "160px",
