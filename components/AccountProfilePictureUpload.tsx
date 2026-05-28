@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import PlayerProfilePicture from "@/components/PlayerProfilePicture"
 
@@ -16,8 +16,11 @@ export default function AccountProfilePictureUpload({
   initialSrc,
 }: AccountProfilePictureUploadProps) {
   const supabase = createClient()
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const [src, setSrc] = useState(initialSrc ?? "")
   const [isUploading, setIsUploading] = useState(false)
+
+  const hasCustomProfilePicture = Boolean(src.trim())
 
   async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -62,17 +65,58 @@ export default function AccountProfilePictureUpload({
     setIsUploading(false)
   }
 
-  return (
-    <label style={{ cursor: "pointer", display: "inline-flex" }}>
-      <PlayerProfilePicture player={playerName} src={src} size={36} />
+  async function handleRemove() {
+    setIsUploading(true)
 
-      <input
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        onChange={handleUpload}
+    const { error } = await supabase
+      .from("profiles")
+      .update({ profile_picture_url: null })
+      .eq("id", userId)
+
+    if (error) {
+      alert(error.message)
+      setIsUploading(false)
+      return
+    }
+
+    setSrc("")
+    setIsUploading(false)
+  }
+
+  return (
+    <div style={{ display: "grid", gap: "12px" }}>
+      <label style={{ cursor: "pointer", display: "inline-flex", width: "36px" }}>
+        <PlayerProfilePicture player={playerName} src={src} size={36} />
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={handleUpload}
+          disabled={isUploading}
+          style={{ display: "none" }}
+        />
+      </label>
+
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        style={{ display: "none" }}
-      />
-    </label>
+        className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15 disabled:opacity-60"
+      >
+        {isUploading ? "Uploading..." : "Change profile picture"}
+      </button>
+
+      {hasCustomProfilePicture && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={isUploading}
+          className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-sm font-bold text-red-200 hover:bg-red-500/15 disabled:opacity-60"
+        >
+          Remove profile picture
+        </button>
+      )}
+    </div>
   )
 }

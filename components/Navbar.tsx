@@ -19,6 +19,7 @@ const navLinks = [
 export default function Navbar() {
   const pathname = usePathname()
   const [playerName, setPlayerName] = useState<string | null>(null)
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null)
 
   const loadAccount = useCallback(async () => {
     const supabase = createClient()
@@ -29,16 +30,18 @@ export default function Navbar() {
 
     if (!user) {
       setPlayerName(null)
+      setProfilePictureUrl(null)
       return
     }
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("player_name")
+      .select("player_name, profile_picture_url")
       .eq("id", user.id)
       .single()
 
     setPlayerName(profile?.player_name || null)
+    setProfilePictureUrl(profile?.profile_picture_url || null)
   }, [])
 
   useEffect(() => {
@@ -94,7 +97,11 @@ export default function Navbar() {
               href="/account"
               className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15"
             >
-              <PlayerProfilePicture player={playerName} size={24} />
+              <PlayerProfilePicture
+                player={playerName}
+                src={profilePictureUrl ?? undefined}
+                size={24}
+              />
 
               <span>{playerName}</span>
             </Link>
