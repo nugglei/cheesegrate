@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 export type UserProfile = {
   player_name: string | null
   role: string | null
+  profile_picture_url: string | null
 }
 
 export async function getProfileByUserId(
@@ -11,7 +12,7 @@ export async function getProfileByUserId(
 ): Promise<UserProfile | null> {
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("player_name, role")
+    .select("player_name, role, profile_picture_url")
     .eq("id", userId)
     .single()
 

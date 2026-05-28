@@ -27,6 +27,7 @@ export default function PlayerProfilePicture({
         height: `${size}px`,
         objectFit: "cover",
         flexShrink: 0,
+        borderRadius: "9999px",
       }}
     />
   )

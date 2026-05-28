@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 import { getProfileByUserId } from "@/lib/profiles"
 import { LogoutButton } from "@/components/LogoutButton"
-import PlayerProfilePicture from "@/components/PlayerProfilePicture"
+import AccountProfilePictureUpload from "../../components/AccountProfilePictureUpload"
 import TagBubble from "@/components/TagBubble"
 
 export default async function AccountPage() {
@@ -46,7 +46,11 @@ export default async function AccountPage() {
         </p>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <PlayerProfilePicture player={playerName} size={36} />
+          <AccountProfilePictureUpload
+            userId={user.id}
+            playerName={playerName}
+            initialSrc={profile?.profile_picture_url}
+          />
 
           <p>
             <strong>Username:</strong> {playerName}
