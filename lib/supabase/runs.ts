@@ -35,6 +35,7 @@ export async function getRunsFromSupabase(): Promise<Run[]> {
       .from("runs")
       .select("id, player, map, category, time, proof, date, tag, created_at")
       .order("time", { ascending: true })
+      .order("id", { ascending: true })
       .range(from, from + pageSize - 1)
 
     if (error) {

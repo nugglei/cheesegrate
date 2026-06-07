@@ -54,6 +54,10 @@ export function getIncludedCategories(category: string) {
   return [category]
 }
 
+export function getExactCategory(category: string) {
+  return [category]
+}
+
 export function formatDate(value: string) {
   let date: Date
 
@@ -80,7 +84,7 @@ export function formatDate(value: string) {
   )
 
   return {
-    display: `${month}/${day}/${year}`,
+    display: value,
     tooltip: `${daysAgo} days ago`,
   }
 }

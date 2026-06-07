@@ -198,6 +198,13 @@ router.refresh()
           Already have an account? Log in
         </Link>
 
+<Link
+  href="/signup/privacy"
+  className="text-sm text-zinc-400 underline hover:text-white"
+>
+  Privacy Statement
+</Link>
+
         {message && <p style={{ marginTop: "14px" }}>{message}</p>}
       </main>
     )

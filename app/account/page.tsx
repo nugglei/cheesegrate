@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import Link from "next/link"
 import { getCurrentUser } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
@@ -5,6 +7,9 @@ import { getProfileByUserId } from "@/lib/profiles"
 import { LogoutButton } from "@/components/LogoutButton"
 import AccountProfilePictureUpload from "@/components/AccountProfilePictureUpload"
 import PlayerProfilePicture from "@/components/PlayerProfilePicture"
+import AccountBioEditor from "@/components/AccountBioEditor"
+import AccountGoalsEditor from "@/components/AccountGoalsEditor"
+import AccountCountryEditor from "@/components/AccountCountryEditor"
 import TagBubble from "@/components/TagBubble"
 
 export default async function AccountPage() {
@@ -64,14 +69,24 @@ export default async function AccountPage() {
       </div>
 
       <div style={{ display: "grid", gap: "10px", maxWidth: "220px" }}>
-        <AccountProfilePictureUpload
-          userId={user.id}
-          playerName={playerName}
-          initialSrc={profile?.profile_picture_url ?? undefined}
-        />
+  <AccountProfilePictureUpload
+    userId={user.id}
+    playerName={playerName}
+    initialSrc={profile?.profile_picture_url ?? undefined}
+  />
 
-        <LogoutButton />
-      </div>
+<AccountCountryEditor userId={user.id} />
+
+  <AccountBioEditor userId={user.id} initialBio={profile?.bio ?? ""} />
+  <AccountGoalsEditor
+  userId={user.id}
+  initialGoal1={profile?.goal_1 ?? ""}
+  initialGoal2={profile?.goal_2 ?? ""}
+  initialGoal3={profile?.goal_3 ?? ""}
+/>
+
+  <LogoutButton />
+</div>
     </main>
   )
 }

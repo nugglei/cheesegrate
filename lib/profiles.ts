@@ -4,6 +4,10 @@ export type UserProfile = {
   player_name: string | null
   role: string | null
   profile_picture_url: string | null
+  bio: string | null
+  goal_1: string | null
+goal_2: string | null
+goal_3: string | null
 }
 
 export async function getProfileByUserId(
@@ -12,7 +16,7 @@ export async function getProfileByUserId(
 ): Promise<UserProfile | null> {
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("player_name, role, profile_picture_url")
+    .select("player_name, role, profile_picture_url, bio, goal_1, goal_2, goal_3")
     .eq("id", userId)
     .single()
 

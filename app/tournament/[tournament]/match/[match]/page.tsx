@@ -104,34 +104,34 @@ function PlayerVsPlayer({
     <div
       className="mt-8 grid items-start justify-center text-white"
       style={{
-        gridTemplateColumns: "40px 85px 60px 85px 40px",
-columnGap: "12px",
+        gridTemplateColumns: "40px 150px 120px 150px 40px",
+        columnGap: "20px",
       }}
     >
       <div />
 
-      <div className="flex flex-col items-center">
+      <div className="flex items-center justify-center gap-2">
+        <span className="text-sm font-medium text-zinc-500">
+          {leftPlayer.seed || ""}
+        </span>
+
         <PlayerNameLink
           player={leftPlayer.player}
           className="text-3xl font-bold hover:underline"
         />
-
-        <span className="mt-2 text-sm font-medium text-zinc-500">
-          {leftPlayer.seed || ""}
-        </span>
       </div>
 
       <div className="flex justify-center" style={{ paddingTop: "10px" }}>
-  <span className="text-sm font-bold text-zinc-400">VS</span>
-</div>
+        <span className="text-sm font-bold text-zinc-400">VS</span>
+      </div>
 
-      <div className="flex flex-col items-center">
+      <div className="flex items-center justify-center gap-2">
         <PlayerNameLink
           player={rightPlayer.player}
           className="text-3xl font-bold hover:underline"
         />
 
-        <span className="mt-2 text-sm font-medium text-zinc-500">
+        <span className="text-sm font-medium text-zinc-500">
           {rightPlayer.seed || ""}
         </span>
       </div>
@@ -155,8 +155,8 @@ function MatchScoreboard({
       <div
         className="grid items-center justify-center"
         style={{
-          gridTemplateColumns: "40px 85px 60px 85px 40px",
-columnGap: "12px",
+          gridTemplateColumns: "40px 150px 120px 150px 40px",
+          columnGap: "20px",
         }}
       >
         <div className="flex justify-center">
@@ -361,9 +361,25 @@ function PlayerResultCard({
   )
 }
 
-function SetCard({ set }: { set: MatchSet }) {
+function SetCard({
+  set,
+  leftPlayer,
+  rightPlayer,
+}: {
+  set: MatchSet
+  leftPlayer?: MatchPlayer
+  rightPlayer?: MatchPlayer
+}) {
   const winningAverage = getWinningAverage(set.results)
   const hasDraw = getHasDraw(set.results, winningAverage)
+
+  const orderedResults =
+    leftPlayer && rightPlayer
+      ? [
+          set.results.find((result) => result.player === leftPlayer.player),
+          set.results.find((result) => result.player === rightPlayer.player),
+        ].filter((result): result is TournamentMatchResult => Boolean(result))
+      : set.results
 
   return (
     <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -380,7 +396,7 @@ function SetCard({ set }: { set: MatchSet }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {set.results.map((result, playerIndex) => (
+        {orderedResults.map((result, playerIndex) => (
           <PlayerResultCard
             key={`${result.matchId}-${result.map}-${result.player}`}
             result={result}
@@ -410,23 +426,35 @@ export default function TournamentMatchPage({
 
 const currentMatchId = String(matchData?.matchId ?? match).trim().toLowerCase()
 
-const matchResults = results.filter(
-  (result) => String(result.matchId).trim().toLowerCase() === currentMatchId
-)
+const matchResults = results
+  .filter(
+    (result) => String(result.matchId).trim().toLowerCase() === currentMatchId
+  )
+  .sort((a, b) => {
+    const aNumber = a.number ?? Number.MAX_SAFE_INTEGER
+    const bNumber = b.number ?? Number.MAX_SAFE_INTEGER
 
-  const matchPlayers =
+    return aNumber - bNumber
+  })
+
+const resultPlayers = getMatchPlayers(matchResults)
+
+const getSeedForPlayer = (player: string) =>
+  resultPlayers.find((resultPlayer) => resultPlayer.player === player)?.seed || ""
+
+const matchPlayers =
   matchData
     ? [
         {
           player: matchData.leftPlayer,
-          seed: "",
+          seed: getSeedForPlayer(matchData.leftPlayer),
         },
         {
           player: matchData.rightPlayer,
-          seed: "",
+          seed: getSeedForPlayer(matchData.rightPlayer),
         },
       ]
-    : getMatchPlayers(matchResults)
+    : resultPlayers
 
 const leftPlayer = matchPlayers[0]
 const rightPlayer = matchPlayers[1]
@@ -463,7 +491,7 @@ const rightPlayer = matchPlayers[1]
       <MatchHeader
         tournament={tournament}
         tournamentName={matchData.tournamentName}
-        round={matchData.round ? `Round ${matchData.round}` : ""}
+        round={matchData.round || ""}
         division={matchData.division}
         date={matchData.date}
         host={matchData.host}
@@ -485,7 +513,12 @@ const rightPlayer = matchPlayers[1]
         {sets.length > 0 && (
           <div className="grid gap-6">
             {sets.map((set) => (
-  <SetCard key={set.map || "unknown"} set={set} />
+  <SetCard
+    key={set.map || "unknown"}
+    set={set}
+    leftPlayer={leftPlayer}
+    rightPlayer={rightPlayer}
+  />
 ))}
           </div>
         )}

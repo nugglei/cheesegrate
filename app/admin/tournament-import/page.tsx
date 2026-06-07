@@ -294,46 +294,50 @@ const importedMaps = mapNames.map((mapName) => {
     calculatedMatchResults,
   ])
 
-  const resultsCsv = useMemo(() => {
-    const normalizedMatchFormat = matchFormat.trim().toLowerCase()
-    const isQualifier =
-      normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp"
+const resultsCsv = useMemo(() => {
+  const normalizedMatchFormat = matchFormat.trim().toLowerCase()
+  const isQualifier =
+    normalizedMatchFormat === "q" || normalizedMatchFormat === "qqp"
 
-    return maps
-      .filter((map) => map.map.trim())
-      .flatMap((map, index) => {
-        const leftRow = buildResultRow({
-          matchId,
-          map: map.map,
-          format: map.format || format,
-          matchFormat,
-          player: leftPlayer,
-          opponent: rightPlayer,
-          result: map.left,
-          opponentResult: map.right,
-          side: "left",
-        })
+  return maps
+    .filter((map) => map.map.trim())
+    .flatMap((map, index) => {
+      const number = index + 1
 
-        if (isQualifier) {
-          return [leftRow]
-        }
-
-        const rightRow = buildResultRow({
-          matchId,
-          map: map.map,
-          format: map.format || format,
-          matchFormat,
-          player: rightPlayer,
-          opponent: leftPlayer,
-          result: map.right,
-          opponentResult: map.left,
-          side: "right",
-        })
-
-        return [leftRow, rightRow]
+      const leftRow = buildResultRow({
+        matchId,
+        number,
+        map: map.map,
+        format: map.format || format,
+        matchFormat,
+        player: leftPlayer,
+        opponent: rightPlayer,
+        result: map.left,
+        opponentResult: map.right,
+        side: "left",
       })
-      .join("\n")
-  }, [maps, matchId, format, matchFormat, leftPlayer, rightPlayer])
+
+      if (isQualifier) {
+        return [leftRow]
+      }
+
+      const rightRow = buildResultRow({
+        matchId,
+        number,
+        map: map.map,
+        format: map.format || format,
+        matchFormat,
+        player: rightPlayer,
+        opponent: leftPlayer,
+        result: map.right,
+        opponentResult: map.left,
+        side: "right",
+      })
+
+      return [leftRow, rightRow]
+    })
+    .join("\n")
+}, [maps, matchId, format, matchFormat, leftPlayer, rightPlayer])
 
   function resetCurrentMatch() {
     setBulkText("")

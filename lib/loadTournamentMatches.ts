@@ -28,8 +28,10 @@ export async function loadTournamentMatches() {
     matchFormat: match.match_format ?? "",
     leftPlayer: match.left_player,
     leftResult: match.left_result ?? "",
+    leftScore: match.left_score,
     rightPlayer: match.right_player,
     rightResult: match.right_result ?? "",
+    rightScore: match.right_score,
   }))
 
   return cachedTournamentMatches

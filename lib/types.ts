@@ -16,14 +16,18 @@ export type TournamentMatch = {
   date: string
   recording: string
   host: string
+  matchFormat: string
   leftPlayer: string
   leftResult: string
+  leftScore: number | null
   rightPlayer: string
   rightResult: string
+  rightScore: number | null
 }
 
 export type TournamentResult = {
   matchId: string
+  number: number
   map: string
   format: string
   seed: string
@@ -51,4 +55,5 @@ export type TournamentResult = {
   run10category: string
   average: string
   best: string
+    result: string
 }

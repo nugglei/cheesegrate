@@ -12,15 +12,18 @@ export async function loadRuns() {
   }
 
   const [submittedRuns, tournamentRuns] = await Promise.all([
-  getRunsFromSupabase(),
-  getTournamentRunsFromSupabase(),
-])
+    getRunsFromSupabase(),
+    getTournamentRunsFromSupabase(),
+  ])
 
-const runs = [...submittedRuns, ...tournamentRuns]
+  const runs = [...submittedRuns, ...tournamentRuns]
 
   console.log("Supabase runs loaded:", runs.length, runs.slice(0, 3))
 
   cachedRuns = runs.map((run) => ({
+    id:
+      run.id ??
+      `${run.player}-${run.map}-${run.category}-${run.time}-${run.date}-${run.proof}`,
     player: run.player,
     map: run.map,
     category: run.category,
@@ -29,6 +32,16 @@ const runs = [...submittedRuns, ...tournamentRuns]
     date: run.date ?? "",
     tag: run.tag ?? "",
   }))
+
+  console.log(
+    "Nugglei Heights 16.7 after loadRuns:",
+    cachedRuns.filter(
+      (run) =>
+        run.player.trim() === "Nugglei" &&
+        run.map.trim() === "Heights" &&
+        Number(run.time) === 16.7
+    )
+  )
 
   return cachedRuns
 }

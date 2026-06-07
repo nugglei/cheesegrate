@@ -69,7 +69,7 @@ export function isBadResult(value: string) {
 
 export function parseWdlRun(value: string) {
   const trimmed = value.trim()
-  const match = trimmed.match(/^([WDL])(?:\s+(.+))?$/i)
+  const match = trimmed.match(/^([WDL])\s*(.*)$/i)
 
   if (!match) {
     return {
@@ -624,6 +624,7 @@ export function resolveMapResultsForFormat(
 
 export function buildResultRow({
   matchId,
+  number,
   map,
   format,
   matchFormat,
@@ -634,6 +635,7 @@ export function buildResultRow({
   side,
 }: {
   matchId: string
+  number: number
   map: string
   format: string
   matchFormat: string
@@ -671,6 +673,7 @@ export function buildResultRow({
 
   return csvRow([
     matchId,
+    number,
     map,
     format,
     player.seed,
