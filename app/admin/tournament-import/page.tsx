@@ -11,7 +11,6 @@ import {
   csvRow,
   emptyMap,
   makeResultFromRuns,
-  parseLegacyRows,
   resolveMapResultsForFormat,
   resolveMatchResult,
   splitBulkRuns,
@@ -61,6 +60,66 @@ const MATCH_FORMAT_OPTIONS = [
 
 const CATEGORY_OPTIONS = ["Skipless IGT", "Skip IGT"]
 
+function normalizeLegacyFormat(value: string) {
+  const normalized = value.trim().toLowerCase()
+
+  if (normalized === "w/l") return "wdl"
+  if (normalized === "ao4") return "srm4"
+  if (normalized === "ao3") return "srm3"
+
+  return normalized || "b3o5"
+}
+
+function parseLegacyRows(text: string): LegacyRow[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim() !== "")
+    .map((line) => {
+      const columns = line.includes("\t")
+        ? line.split("\t")
+        : line.split(",")
+
+      const tournamentName = columns[0]?.trim() || ""
+      const format = normalizeLegacyFormat(columns[1] || "")
+      const division = columns[2]?.trim() || ""
+      const round = columns[3]?.trim() || ""
+      const matchId = columns[4]?.trim() || ""
+      const seed = columns[5]?.trim() || ""
+      const player = columns[6]?.trim() || ""
+      const map = columns[7]?.trim() || ""
+
+      const runs = columns
+        .slice(8)
+        .map((value) => value.trim())
+        .filter((value) => value !== "")
+
+      return {
+        tournamentName,
+        format,
+        division,
+        round,
+        matchId,
+        seed,
+        player,
+        map,
+        runs,
+      }
+    })
+    .filter((row) => {
+      return (
+        row.tournamentName !== "" &&
+        row.format !== "" &&
+        row.round !== "" &&
+        row.matchId !== "" &&
+        row.player !== "" &&
+        row.map !== "" &&
+        row.runs.length > 0
+      )
+    })
+}
+
+
 export default function TournamentImportPage() {
     const [isCheckingAdmin, setIsCheckingAdmin] = useState(true)
 const [isAdmin, setIsAdmin] = useState(false)
@@ -90,6 +149,7 @@ const [isAdmin, setIsAdmin] = useState(false)
   const [maps, setMaps] = useState<MapInput[]>([emptyMap()])
   const [isSaving, setIsSaving] = useState(false)
 const [saveMessage, setSaveMessage] = useState("")
+  const [legacyImportError, setLegacyImportError] = useState("")
 
   const legacyRows = useMemo(() => parseLegacyRows(bulkText), [bulkText])
 
@@ -201,7 +261,7 @@ const importedMaps = mapNames.map((mapName) => {
 
  return {
   map: mapName,
-  format: firstRow.format || "b3o5",
+  format: normalizeLegacyFormat(firstRow.format),
   left: makeResultFromRuns(leftRow?.runs || []),
   right: makeResultFromRuns(rightRow?.runs || []),
 }
@@ -211,7 +271,7 @@ const importedMaps = mapNames.map((mapName) => {
     setTournamentName(firstRow.tournamentName)
     setRound(firstRow.round)
     setDivision(firstRow.division)
-    setFormat(firstRow.format || "b3o5")
+    setFormat(normalizeLegacyFormat(firstRow.format))
     setMatchFormat("maj")
     setLeftPlayer(left)
     setRightPlayer(right)
@@ -341,6 +401,7 @@ const resultsCsv = useMemo(() => {
 
   function resetCurrentMatch() {
     setBulkText("")
+    setLegacyImportError("")
     setMatchId("")
     setTournamentName("")
     setRound("")
@@ -577,14 +638,26 @@ if (!isAdmin) {
 
         <textarea
           value={bulkText}
-          onChange={(event) => setBulkText(event.target.value)}
+          onChange={(event) => {
+            const nextText = event.target.value
+            setBulkText(nextText)
+
+            if (!nextText.trim() || parseLegacyRows(nextText).length > 0) {
+              setLegacyImportError("")
+            }
+          }}
+          onBlur={() => {
+            if (bulkText.trim() && legacyRows.length === 0) {
+              setLegacyImportError("No legacy rows detected. Check the paste format.")
+            }
+          }}
           placeholder="Paste one legacy match here..."
           className="mt-4 min-h-60 w-full rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-sm text-zinc-200 outline-none"
         />
 
-          {bulkText.trim() && legacyRows.length === 0 && (
+          {legacyImportError && (
   <p className="mt-3 text-sm text-red-300">
-    No legacy rows detected. Check the paste format.
+    {legacyImportError}
   </p>
 )}
 

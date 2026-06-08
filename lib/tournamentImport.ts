@@ -668,7 +668,14 @@ export function buildResultRow({
     const cleanRun = getCsvRunValue(run, normalizedFormat)
     const cleanCategory = csvCategories[index]?.trim() || DEFAULT_CATEGORY
 
-    return [cleanRun, cleanRun && !isBadResult(cleanRun) ? cleanCategory : ""]
+    return [
+  cleanRun,
+  cleanRun &&
+  !isBadResult(cleanRun) &&
+  !["W", "D", "L"].includes(cleanRun.trim().toUpperCase())
+    ? cleanCategory
+    : "",
+]
   })
 
   return csvRow([
@@ -686,17 +693,41 @@ export function buildResultRow({
   ])
 }
 
-export function parseLegacyRows(rawText: string): LegacyRow[] {
-  if (!rawText.trim()) {
-    return []
-  }
+export function normalizeLegacyFormat(value: string) {
+  const normalized = value.trim().toLowerCase()
 
-  return rawText
-    .trim()
+  if (normalized === "w/l") return "wdl"
+  if (normalized === "ao4") return "srm4"
+  if (normalized === "ao3") return "srm3"
+
+  return normalized || "b3o5"
+}
+
+export function parseLegacyRows(text: string) {
+  return text
     .split(/\r?\n/)
-    .map((line) => line.split("\t"))
-    .map((row) => {
-      const [
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim())
+    .map((line) => {
+      const columns = line.split("\t")
+
+      const tournamentName = columns[0]?.trim() || ""
+      const rawFormat = columns[1]?.trim() || ""
+      const division = columns[2]?.trim() || ""
+      const round = columns[3]?.trim() || ""
+      const matchId = columns[4]?.trim() || ""
+      const seed = columns[5]?.trim() || ""
+      const player = columns[6]?.trim() || ""
+      const map = columns[7]?.trim() || ""
+
+      const format = normalizeLegacyFormat(rawFormat)
+
+      const runs = columns
+        .slice(8)
+        .map((value) => value.trim())
+        .filter((value) => value !== "")
+
+      return {
         tournamentName,
         format,
         division,
@@ -705,31 +736,20 @@ export function parseLegacyRows(rawText: string): LegacyRow[] {
         seed,
         player,
         map,
-        ...runs
-      ] = row
-
-      return {
-        tournamentName: tournamentName || "",
-        format: format || "",
-        division: division || "",
-        round: round || "",
-        matchId: matchId || "",
-        seed: seed || "",
-        player: player || "",
-        map: map || "",
-        runs: runs.filter((run) => run !== undefined),
+        runs,
       }
     })
-    .filter(
-      (row) =>
-        row.tournamentName &&
-        row.format &&
-        row.round &&
-        row.matchId &&
-        row.seed &&
-        row.player &&
-        row.map
-    )
+    .filter((row) => {
+      return (
+        row.tournamentName !== "" &&
+        row.format !== "" &&
+        row.round !== "" &&
+        row.matchId !== "" &&
+        row.player !== "" &&
+        row.map !== "" &&
+        row.runs.length > 0
+      )
+    })
 }
 
 export type MatchResult = "W" | "L" | "D" | ""

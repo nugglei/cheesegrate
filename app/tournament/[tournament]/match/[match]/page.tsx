@@ -273,7 +273,7 @@ function RunCard({
   index: number
   isRightPlayer: boolean
 }) {
-  const categoryLabel = category || "Unknown"
+  const categoryLabel = category?.trim() || ""
   const displayCategoryLabel = getDisplayCategoryLabel(categoryLabel)
   const categoryTone = getCategoryTone(categoryLabel)
 
@@ -292,9 +292,11 @@ function RunCard({
     }
   >
     <span className="inline-flex items-center">
+  {categoryLabel && (
   <TagBubble tone={categoryTone} size="sm">
     {displayCategoryLabel}
   </TagBubble>
+)}
 </span>
   </div>
 )}
@@ -319,8 +321,26 @@ function PlayerResultCard({
   hasDraw: boolean
 }) {
   const isRightPlayer = playerIndex % 2 === 1
-  const didWin = getDidWin(result.average, winningAverage, hasDraw)
+  const storedResult = result.result?.trim().toUpperCase()
+  const hasStoredResult =
+    storedResult === "W" || storedResult === "L" || storedResult === "D"
+
+  const didWin = hasStoredResult
+    ? storedResult === "W"
+    : getDidWin(result.average, winningAverage, hasDraw)
+
+  const displayHasDraw = hasStoredResult ? storedResult === "D" : hasDraw
+
+  const resultLabel = hasStoredResult
+    ? storedResult
+    : getResultLabel(didWin, displayHasDraw)
+
   const runs = getRuns(result)
+
+  const hasAverage =
+    result.average !== null &&
+    result.average !== undefined &&
+    String(result.average).trim() !== ""
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
@@ -330,8 +350,8 @@ function PlayerResultCard({
         </h3>
 
         <div className="mt-3 flex justify-center">
-          <TagBubble tone={getResultTone(didWin, hasDraw)} size="lg">
-            {getResultLabel(didWin, hasDraw)}
+          <TagBubble tone={getResultTone(didWin, displayHasDraw)} size="lg">
+            {resultLabel}
           </TagBubble>
         </div>
       </div>
@@ -347,15 +367,17 @@ function PlayerResultCard({
           />
         ))}
 
-        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-3 text-center">
-          <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-            Average
-          </div>
+        {hasAverage && (
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-3 text-center">
+            <div className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+              Average
+            </div>
 
-          <div className="mt-1 text-2xl font-bold text-white">
-            {result.average || "—"}
+            <div className="mt-1 text-2xl font-bold text-white">
+              {result.average}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

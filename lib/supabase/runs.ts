@@ -170,11 +170,11 @@ export async function getTournamentRunsFromSupabase(): Promise<Run[]> {
   )
 
   return allRows.flatMap((row) => {
-    if (row.flag?.trim()) {
-      return []
-    }
+  if (row.flag?.trim().toLowerCase() === "x") {
+    return []
+  }
 
-    const runs: Run[] = []
+  const runs: Run[] = []
 
     for (let i = 1; i <= 10; i++) {
       const time = row[`run${i}` as keyof TournamentResult]

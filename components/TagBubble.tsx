@@ -1,6 +1,6 @@
 type TagBubbleProps = {
   children: React.ReactNode
-  tone?: "white" | "blue" | "gold" | "red" | "green" | "purple"
+  tone?: "white" | "blue" | "gold" | "silver" | "red" | "lightred" | "green" | "purple"
   size?: "sm" | "md" | "lg"
 }
 
@@ -16,14 +16,24 @@ const toneStyles = {
     color: "#bfdbfe",
   },
   gold: {
-    borderColor: "rgba(253, 224, 71, 0.4)",
-    backgroundColor: "rgba(250, 204, 21, 0.1)",
-    color: "#fef08a",
+    borderColor: "rgba(253, 195, 71, 0.4)",
+    backgroundColor: "rgba(250, 189, 21, 0.16)",
+    color: "#fedf8a",
+  },
+  silver: {
+    borderColor: "rgba(219, 219, 219, 0.3)",
+    backgroundColor: "rgba(219, 219, 219, 0.1)",
+    color: "rgba(219, 219, 219, 0.8)",
   },
   red: {
   borderColor: "rgba(185, 28, 28, 0.65)",
   backgroundColor: "rgba(127, 29, 29, 0.45)",
   color: "#f87171",
+},
+lightred: {
+  borderColor: "rgba(196, 88, 88, 0.65)",
+  backgroundColor: "rgba(155, 54, 54, 0.34)",
+  color: "#ffa8a8",
 },
   green: {
     borderColor: "rgba(134, 239, 172, 0.4)",

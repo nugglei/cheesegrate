@@ -4,6 +4,7 @@ export type TournamentMatchResult = {
   seed?: string
   map?: string
   average: string
+  result?: string
   run1?: string
   run1category?: string
   run2?: string
@@ -45,6 +46,26 @@ export function parseTimeValue(time?: string) {
   const parsed = Number(time)
 
   return Number.isFinite(parsed) ? parsed : Infinity
+}
+
+export function normalizeStoredResult(value?: string) {
+  const normalized = value?.trim().toUpperCase()
+
+  if (normalized === "W") return "W"
+  if (normalized === "L") return "L"
+  if (normalized === "D") return "D"
+
+  return ""
+}
+
+export function getOppositeStoredResult(value?: string) {
+  const normalized = normalizeStoredResult(value)
+
+  if (normalized === "W") return "L"
+  if (normalized === "L") return "W"
+  if (normalized === "D") return "D"
+
+  return ""
 }
 
 export function getCategoryTone(category: string) {
@@ -146,12 +167,37 @@ export function getMatchScore<T extends TournamentMatchResult>(
       (result) => result.player === rightPlayer?.player
     )
 
+    const storedLeftResult =
+      normalizeStoredResult(leftResult?.result) ||
+      getOppositeStoredResult(rightResult?.result)
+
+    const storedRightResult =
+      normalizeStoredResult(rightResult?.result) ||
+      getOppositeStoredResult(leftResult?.result)
+
+    if (storedLeftResult === "W" || storedRightResult === "L") {
+      leftScore += 1
+      continue
+    }
+
+    if (storedRightResult === "W" || storedLeftResult === "L") {
+      rightScore += 1
+      continue
+    }
+
+    if (storedLeftResult === "D" || storedRightResult === "D") {
+      leftScore += 0.5
+      rightScore += 0.5
+      drawScore += 1
+      continue
+    }
+
     const leftAverage = parseTimeValue(leftResult?.average)
     const rightAverage = parseTimeValue(rightResult?.average)
 
-if (leftAverage === Infinity && rightAverage === Infinity) {
-  continue
-}
+    if (leftAverage === Infinity && rightAverage === Infinity) {
+      continue
+    }
 
     if (leftAverage < rightAverage) {
       leftScore += 1
@@ -189,6 +235,18 @@ export function getHasDraw<T extends TournamentMatchResult>(
   results: T[],
   winningAverage: number
 ) {
+  const storedResults = results
+    .map((result) => normalizeStoredResult(result.result))
+    .filter(Boolean)
+
+  if (storedResults.includes("D")) {
+    return true
+  }
+
+  if (storedResults.includes("W") || storedResults.includes("L")) {
+    return false
+  }
+
   return (
     results.length > 1 &&
     results.every(
@@ -202,8 +260,15 @@ export function getHasDraw<T extends TournamentMatchResult>(
 export function getDidWin(
   average: string,
   winningAverage: number,
-  hasDraw: boolean
+  hasDraw: boolean,
+  result?: string
 ) {
+  const storedResult = normalizeStoredResult(result)
+
+  if (storedResult === "W") return true
+  if (storedResult === "L") return false
+  if (storedResult === "D") return false
+
   const resultAverage = parseTimeValue(average)
 
   return (
