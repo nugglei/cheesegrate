@@ -534,9 +534,9 @@ const rightPlayer = matchPlayers[1]
 
         {sets.length > 0 && (
           <div className="grid gap-6">
-            {sets.map((set) => (
+            {sets.map((set, index) => (
   <SetCard
-    key={set.map || "unknown"}
+    key={`${set.number ?? index}-${set.map || "unknown"}`}
     set={set}
     leftPlayer={leftPlayer}
     rightPlayer={rightPlayer}

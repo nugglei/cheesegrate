@@ -5,7 +5,6 @@ import { useParams } from "next/navigation"
 import PlayerProfilePicture from "@/components/PlayerProfilePicture"
 import StatSelector from "@/components/StatSelector"
 import { useRuns } from "@/hooks/useRuns"
-import { getMapsForCategory } from "@/lib/categoryMaps"
 import {
   formatHoFRank,
   formatHoFValue,
@@ -15,6 +14,11 @@ import { getRankColor } from "@/lib/rankColors"
 import { slugify } from "@/lib/slug"
 import { createClient } from "@/lib/supabase/client"
 import TagBubble from "@/components/TagBubble"
+import CategorySelector from "@/components/CategorySelector"
+import { getLeaderboardRuns } from "@/lib/leaderboards"
+import { maps } from "@/lib/maps"
+import { formatDate, formatTime } from "@/lib/utils"
+import { getMapsForCategory } from "@/lib/categoryMaps"
 
 type PlayerProfileTab = "overview" | "rankings" | "pbs" | "tournaments"
 
@@ -48,6 +52,22 @@ export default function PlayerProfilePage() {
   const [countryCode, setCountryCode] = useState("")
   const [countryName, setCountryName] = useState("")
   const [tab, setTab] = useState<PlayerProfileTab>("overview")
+  const [pbCategory, setPbCategory] = useState("Skip IGT")
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null)
+  const [pbRankSort, setPbRankSort] = useState<"asc" | "desc" | null>(null)
+  const [pbDateSort, setPbDateSort] = useState<"asc" | "desc" | null>(null)
+
+  const categories = [
+  "Skip IGT",
+  "Skip EGT",
+  "Skipless IGT",
+  "Skipless EGT",
+  "R15 Skip",
+  "R15 Skipless",
+  "R6 Skip",
+  "R6 Skipless",
+  "Glitch",
+]
 
   const playerSlug = String(params.player ?? "")
 
@@ -120,6 +140,82 @@ const careerActivity = useMemo(() => {
       }
     })
   }, [runs, playerName])
+
+const mapPBs = useMemo(() => {
+  const pbs = getMapsForCategory(pbCategory).map((map) => {
+    const leaderboardRuns = getLeaderboardRuns(runs, map, pbCategory)
+
+    const playerRun = leaderboardRuns.find(
+      (run) =>
+        run.player.trim().toLowerCase() === playerName.trim().toLowerCase()
+    )
+
+    if (!playerRun) {
+      return {
+        map,
+        rank: null,
+        time: null,
+        date: null,
+        proof: null,
+      }
+    }
+
+    const playerTime = Number(playerRun.time)
+
+    const rank =
+      leaderboardRuns.filter((run) => Number(run.time) < playerTime).length + 1
+
+    return {
+      map,
+      rank,
+      time: playerRun.time,
+      date: playerRun.date,
+      proof: playerRun.proof,
+    }
+  })
+
+  if (pbRankSort === "asc") {
+    return [...pbs].sort((a, b) => {
+      if (a.rank === null && b.rank === null) return 0
+      if (a.rank === null) return 1
+      if (b.rank === null) return -1
+
+      return a.rank - b.rank
+    })
+  }
+
+  if (pbRankSort === "desc") {
+    return [...pbs].sort((a, b) => {
+      if (a.rank === null && b.rank === null) return 0
+      if (a.rank === null) return 1
+      if (b.rank === null) return -1
+
+      return b.rank - a.rank
+    })
+  }
+
+  if (pbDateSort === "asc") {
+    return [...pbs].sort((a, b) => {
+      if (a.date === null && b.date === null) return 0
+      if (a.date === null) return 1
+      if (b.date === null) return -1
+
+      return new Date(a.date).getTime() - new Date(b.date).getTime()
+    })
+  }
+
+  if (pbDateSort === "desc") {
+    return [...pbs].sort((a, b) => {
+      if (a.date === null && b.date === null) return 0
+      if (a.date === null) return 1
+      if (b.date === null) return -1
+
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
+  }
+
+  return pbs
+}, [runs, playerName, pbCategory, pbRankSort, pbDateSort])
 
   useEffect(() => {
     async function loadProfile() {
@@ -331,6 +427,164 @@ const careerActivity = useMemo(() => {
             </div>
           </div>
         )}
+        {tab === "pbs" && (
+  <div className="w-full">
+    <CategorySelector
+      categories={rankingCategories}
+      category={pbCategory}
+      setCategory={setPbCategory}
+    />
+
+    <div className="overflow-hidden rounded-lg border border-white/10">
+      <table className="w-full border-collapse text-left text-white">
+        <thead className="bg-white/10">
+  <tr>
+    <th className="px-4 py-3 font-bold">Map</th>
+    <th className="px-4 py-3 font-bold">PB</th>
+<th className="px-4 py-3 font-bold">
+  <button
+    type="button"
+    onClick={() => {
+      setPbDateSort(null)
+
+      setPbRankSort((current) => {
+        if (current === null) return "asc"
+        if (current === "asc") return "desc"
+
+        return null
+      })
+    }}
+    className="flex items-center gap-1 font-bold"
+  >
+    <span>Rank</span>
+    <span className="font-normal">
+      {pbRankSort === "asc" ? "↑" : pbRankSort === "desc" ? "↓" : "−"}
+    </span>
+  </button>
+</th>
+    <th className="px-4 py-3 font-bold">
+  <button
+    type="button"
+    onClick={() => {
+      setPbRankSort(null)
+
+      setPbDateSort((current) => {
+        if (current === null) return "asc"
+        if (current === "asc") return "desc"
+
+        return null
+      })
+    }}
+    className="flex items-center gap-1 font-bold"
+  >
+    <span>Date</span>
+    <span className="font-normal">
+      {pbDateSort === "asc" ? "↑" : pbDateSort === "desc" ? "↓" : "−"}
+    </span>
+  </button>
+</th>
+  </tr>
+</thead>
+
+        <tbody>
+  {mapPBs.map((pb) => (
+    <tr
+      key={pb.map}
+      className={`border-t border-white/10 ${
+  pb.time === null ? "bg-red-950/40" : ""
+}`}
+    >
+      <td className="px-4 py-3">
+  <a
+    href={`/lb/${pb.map.toLowerCase().replaceAll(" ", "-")}`}
+    className="flex items-center gap-3 font-bold hover:underline"
+  >
+    <img
+      src={`/maps/${pb.map.toLowerCase().replaceAll(" ", "-")}.png`}
+      alt={pb.map}
+      className="h-10 w-10 object-cover"
+    />
+
+    <span>{pb.map}</span>
+  </a>
+</td>
+
+      <td className="px-4 py-3 font-bold">
+  <div className="flex items-center gap-2">
+    <span>
+      {pb.time !== null ? formatTime(pb.time, pbCategory) : "--"}
+    </span>
+
+    {pb.proof && (
+      <a
+        href={pb.proof}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <img
+  src="/video.png"
+  alt="Proof"
+  className="h-4 w-auto"
+/>
+      </a>
+    )}
+  </div>
+</td>
+
+<td
+  className="px-4 py-3 font-bold"
+  style={{
+    color:
+      pb.rank !== null
+        ? getRankColor(pb.rank - 1, "#ffffff")
+        : "#71717a",
+  }}
+>
+  {pb.rank !== null ? pb.rank : "--"}
+</td>
+
+      <td className="relative px-4 py-3 text-white">
+  {pb.date ? (
+    <span
+      onMouseEnter={() => setHoveredDate(pb.map)}
+      onMouseLeave={() => setHoveredDate(null)}
+      className="relative inline-block"
+    >
+      {formatDate(pb.date).display}
+
+      {hoveredDate === pb.map && (
+        <div
+          style={{
+            position: "absolute",
+            top: "24px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderRadius: "8px",
+            backgroundColor: "#000000",
+            color: "#ffffff",
+            fontSize: "14px",
+            fontWeight: 400,
+            padding: "4px 8px",
+            whiteSpace: "nowrap",
+            zIndex: 50,
+          }}
+        >
+          {formatDate(pb.date).tooltip}
+        </div>
+      )}
+    </span>
+  ) : (
+    "--"
+  )}
+</td>
+    </tr>
+  ))}
+</tbody>
+      </table>
+    </div>
+  </div>
+)}
       </section>
     </main>
   )

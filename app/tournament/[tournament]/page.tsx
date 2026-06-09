@@ -192,6 +192,37 @@ function getRoundSortValue(round: string | null | undefined, playerCount: number
   return 999
 }
 
+function getDivisionSortValue(division: string | null | undefined) {
+  const divisionOrder = [
+    "Masters",
+    "Division I",
+    "Challengers",
+    "Division II",
+    "Futures",
+    "A",
+    "B",
+    "C",
+    "D",
+  ]
+
+  const cleanDivision = String(division ?? "").trim()
+
+  if (!cleanDivision) {
+    return 999
+  }
+
+  const divisionIndex = divisionOrder.findIndex(
+    (divisionName) =>
+      divisionName.toLowerCase() === cleanDivision.toLowerCase()
+  )
+
+  if (divisionIndex !== -1) {
+    return divisionIndex
+  }
+
+  return 999
+}
+
 function getDateSortValue(date: string | null | undefined) {
   if (!date) {
     return 9999999999999
@@ -231,6 +262,13 @@ const sortedTournamentMatches = [...tournamentMatches].sort((a, b) => {
 
   if (roundDifference !== 0) {
     return roundDifference * directionMultiplier
+  }
+
+  const divisionDifference =
+    getDivisionSortValue(a.division) - getDivisionSortValue(b.division)
+
+  if (divisionDifference !== 0) {
+    return divisionDifference * directionMultiplier
   }
 
   const dateDifference = getDateSortValue(a.date) - getDateSortValue(b.date)

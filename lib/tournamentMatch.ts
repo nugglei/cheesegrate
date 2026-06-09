@@ -2,6 +2,7 @@ export type TournamentMatchResult = {
   matchId: string
   player: string
   seed?: string
+  number?: number
   map?: string
   average: string
   result?: string
@@ -33,6 +34,7 @@ export type MatchPlayer = {
 }
 
 export type MatchSet<T extends TournamentMatchResult = TournamentMatchResult> = {
+  number?: number | null
   map?: string
   results: T[]
 }
@@ -131,23 +133,32 @@ export function getSetKey(result: TournamentMatchResult) {
 }
 
 export function getMatchSets<T extends TournamentMatchResult>(
-  matchResults: T[]
-) {
-  return Array.from(
-    new Map(
-      matchResults.map((result) => {
-        const setKey = getSetKey(result)
+  results: T[]
+): MatchSet<T>[] {
+  const sets = new Map<string, MatchSet<T>>()
 
-        return [
-          setKey,
-          {
-            map: result.map,
-            results: matchResults.filter((item) => getSetKey(item) === setKey),
-          },
-        ]
+  results.forEach((result) => {
+    const number = result.number ?? null
+    const map = result.map ?? ""
+    const key = `${number ?? "unknown"}-${map}`
+
+    if (!sets.has(key)) {
+      sets.set(key, {
+        number,
+        map,
+        results: [],
       })
-    ).values()
-  )
+    }
+
+    sets.get(key)?.results.push(result)
+  })
+
+  return Array.from(sets.values()).sort((a, b) => {
+    const aNumber = a.number ?? Number.MAX_SAFE_INTEGER
+    const bNumber = b.number ?? Number.MAX_SAFE_INTEGER
+
+    return aNumber - bNumber
+  })
 }
 
 export function getMatchScore<T extends TournamentMatchResult>(
