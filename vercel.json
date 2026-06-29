@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync/swift-leaderboards",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

@@ -17,9 +17,9 @@ export async function loadTournamentResults() {
     results.slice(0, 3)
   )
 
-    cachedTournamentResults = results.map((result) => ({
+      cachedTournamentResults = results.map((result) => ({
     matchId: result.match_id,
-    number: result.number ?? null,
+    number: result.number,
     map: result.map ?? "",
     format: result.format ?? "",
     seed: result.seed ?? "",

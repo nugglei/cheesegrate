@@ -4,21 +4,33 @@ import { useCallback, useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+
+import GameSwitcher from "@/components/GameSwitcher"
 import PlayerProfilePicture from "@/components/PlayerProfilePicture"
 import { createClient } from "@/lib/supabase/client"
 
 const navLinks = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Home", global: true },
   { href: "/lb", label: "Map LBs" },
   { href: "/wrs", label: "WRs" },
   { href: "/hof", label: "Hall of Fame" },
-  { href: "/player", label: "Players" },
+  { href: "/player", label: "Players", global: true },
   { href: "/tournament", label: "Tournaments" },
-  { href: "/submit", label: "Submit Run" },
+  { href: "/submit", label: "Submit Run", global: true },
 ]
+
+function getCurrentGame(pathname: string) {
+  if (pathname === "/swift" || pathname.startsWith("/swift/")) {
+    return "swift"
+  }
+
+  return "sr"
+}
 
 export default function Navbar() {
   const pathname = usePathname()
+  const game = getCurrentGame(pathname)
+
   const [playerName, setPlayerName] = useState<string | null>(null)
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null)
 
@@ -79,25 +91,27 @@ export default function Navbar() {
           <div className="text-lg font-bold text-white">Cheesegrate</div>
         </Link>
 
-        <div
-          className="flex items-center gap-6"
-          style={{ marginLeft: "200px" }}
-        >
-          {navLinks.map((link) => (
-  <Link
-    key={link.href}
-    href={link.href}
-    className={
-      link.href === "/submit"
-        ? "rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15"
-        : "text-sm font-medium text-zinc-300 hover:text-white"
-    }
-  >
-    {link.label}
-  </Link>
-))}
+        <div className="ml-auto flex items-center gap-5">
+          {navLinks.map((link) => {
+            const href = link.global ? link.href : `/${game}${link.href}`
 
-<div style={{ marginLeft: "24px" }}>
+            return (
+              <Link
+                key={link.href}
+                href={href}
+                className={
+                  link.href === "/submit"
+                    ? "rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/15"
+                    : "text-sm font-medium text-zinc-300 hover:text-white"
+                }
+              >
+                {link.label}
+              </Link>
+            )
+          })}
+
+          <GameSwitcher />
+
           {playerName ? (
             <Link
               href="/account"
@@ -119,7 +133,6 @@ export default function Navbar() {
               Log in
             </Link>
           )}
-        </div>
         </div>
       </nav>
     </header>

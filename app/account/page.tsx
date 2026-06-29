@@ -10,6 +10,7 @@ import PlayerProfilePicture from "@/components/PlayerProfilePicture"
 import AccountBioEditor from "@/components/AccountBioEditor"
 import AccountGoalsEditor from "@/components/AccountGoalsEditor"
 import AccountCountryEditor from "@/components/AccountCountryEditor"
+import AccountRobloxEditor from "@/components/AccountRobloxEditor"
 import TagBubble from "@/components/TagBubble"
 
 export default async function AccountPage() {
@@ -69,6 +70,7 @@ export default async function AccountPage() {
       </div>
 
       <div style={{ display: "grid", gap: "10px", maxWidth: "220px" }}>
+        
   <AccountProfilePictureUpload
     userId={user.id}
     playerName={playerName}
@@ -76,6 +78,8 @@ export default async function AccountPage() {
   />
 
 <AccountCountryEditor userId={user.id} />
+
+<AccountRobloxEditor userId={user.id} />
 
   <AccountBioEditor userId={user.id} initialBio={profile?.bio ?? ""} />
   <AccountGoalsEditor

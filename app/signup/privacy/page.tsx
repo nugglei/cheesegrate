@@ -7,7 +7,7 @@ export default function SignupPrivacyPage() {
         <p>
           When you sign up / sign in with Discord, Cheesegrate only receives basic account
           information needed to identify you on the site, such as your Discord
-          user ID, username, profile picture, and most sensitive, your email address linked to the account.
+          user ID, username, profile picture, and most sensitive: the email address linked to the account.
         </p>
 
         <p>
