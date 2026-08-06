@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 
-const DATA_VERS = Array.from({ length: 49 }, (_, index) => String(index + 1))
+const DATA_VERS = Array.from({ length: 59 }, (_, index) => String(index + 1))
 
 type ExistingSwiftRow = {
   data_ver: string
