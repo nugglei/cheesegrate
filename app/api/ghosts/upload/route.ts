@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Limit request size.
+    // Limit upload size.
     const rawBody = await request.text()
 
     if (Buffer.byteLength(rawBody, "utf8") > MAX_REPLAY_BYTES) {
@@ -84,6 +84,7 @@ export async function POST(request: Request) {
       )
     }
 
+    // Parse JSON.
     let parsed: unknown
 
     try {
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       )
     }
 
+    // Validate replay metadata.
     if (!isValidUpload(parsed)) {
       return Response.json(
         { ok: false, error: "Invalid replay data" },
@@ -104,6 +106,7 @@ export async function POST(request: Request) {
 
     const upload = parsed
 
+    // Connect to Supabase.
     const supabase = createClient(
       getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
       getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
@@ -115,61 +118,7 @@ export async function POST(request: Request) {
       }
     )
 
-    // Check the authoritative Roblox PB.
-    // The OrderedDataStore uses the player's username
-    // as its key, matching your MapTimeSystem.
-    const universeId = getRequiredEnv("ROBLOX_UNIVERSE_ID")
-    const robloxApiKey = getRequiredEnv("ROBLOX_API_KEY")
-
-    const storeName = `${upload.data_ver}LeaderBoardData`
-
-    const robloxUrl =
-      `https://apis.roblox.com/cloud/v2/universes/${universeId}` +
-      `/ordered-data-stores/${storeName}` +
-      `/scopes/global/entries/${encodeURIComponent(upload.player)}`
-
-    const robloxResponse = await fetch(robloxUrl, {
-      headers: {
-        "x-api-key": robloxApiKey,
-      },
-      cache: "no-store",
-    })
-
-    if (!robloxResponse.ok) {
-      return Response.json(
-        {
-          ok: false,
-          error: "Could not verify Roblox PB",
-          status: robloxResponse.status,
-        },
-        { status: 503 }
-      )
-    }
-
-    const robloxEntry: unknown = await robloxResponse.json()
-
-    if (!robloxEntry || typeof robloxEntry !== "object") {
-      return Response.json(
-        { ok: false, error: "Invalid Roblox PB response" },
-        { status: 503 }
-      )
-    }
-
-    const verifiedTime = Number(
-      (robloxEntry as Record<string, unknown>).value
-    )
-
-    if (!Number.isInteger(verifiedTime) || verifiedTime !== upload.time) {
-      return Response.json(
-        {
-          ok: false,
-          error: "Replay time does not match saved PB",
-        },
-        { status: 409 }
-      )
-    }
-
-    // Check whether this player already has a replay.
+    // Check whether this player already has a faster ghost.
     const { data: existing, error: readError } = await supabase
       .from("ghost_replays")
       .select("time")
@@ -181,7 +130,6 @@ export async function POST(request: Request) {
       throw readError
     }
 
-    // Never replace a faster or equal replay.
     if (existing && existing.time <= upload.time) {
       return Response.json({
         ok: true,
@@ -190,6 +138,7 @@ export async function POST(request: Request) {
       })
     }
 
+    // Save the new PB ghost.
     const { error: saveError } = await supabase
       .from("ghost_replays")
       .upsert(
@@ -227,3 +176,4 @@ export async function POST(request: Request) {
     )
   }
 }
+    
