@@ -69,17 +69,24 @@ export async function POST(request: Request) {
 
     if (authorization !== `Bearer ${uploadSecret}`) {
       return Response.json(
-        { ok: false, error: "Unauthorized" },
+        {
+          ok: false,
+          error: "Unauthorized",
+        },
         { status: 401 }
       )
     }
 
-    // Limit upload size.
+    // Read the upload body.
     const rawBody = await request.text()
 
+    // Enforce maximum JSON request size.
     if (Buffer.byteLength(rawBody, "utf8") > MAX_REPLAY_BYTES) {
       return Response.json(
-        { ok: false, error: "Replay too large" },
+        {
+          ok: false,
+          error: "Replay too large",
+        },
         { status: 413 }
       )
     }
@@ -91,22 +98,28 @@ export async function POST(request: Request) {
       parsed = JSON.parse(rawBody)
     } catch {
       return Response.json(
-        { ok: false, error: "Invalid JSON" },
+        {
+          ok: false,
+          error: "Invalid JSON",
+        },
         { status: 400 }
       )
     }
 
-    // Validate replay metadata.
+    // Validate metadata.
     if (!isValidUpload(parsed)) {
       return Response.json(
-        { ok: false, error: "Invalid replay data" },
+        {
+          ok: false,
+          error: "Invalid replay data",
+        },
         { status: 400 }
       )
     }
 
     const upload = parsed
 
-    // Connect to Supabase.
+    // Connect to Supabase using the server-only key.
     const supabase = createClient(
       getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
       getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
@@ -118,48 +131,54 @@ export async function POST(request: Request) {
       }
     )
 
-    // Check whether this player already has a faster ghost.
-    const { data: existing, error: readError } = await supabase
-      .from("ghost_replays")
-      .select("time")
-      .eq("data_ver", upload.data_ver)
-      .eq("user_id", upload.user_id)
-      .maybeSingle()
-
-    if (readError) {
-      throw readError
-    }
-
-    if (existing && existing.time <= upload.time) {
-      return Response.json({
-        ok: true,
-        saved: false,
-        reason: "Existing replay is faster or equal",
-      })
-    }
-
-    // Save the new PB ghost.
-    const { error: saveError } = await supabase
-      .from("ghost_replays")
-      .upsert(
-        {
-          data_ver: upload.data_ver,
-          user_id: upload.user_id,
-          player: upload.player,
-          time: upload.time,
-          replay_data: upload.replay_data,
-          avatar_data: upload.avatar_data,
-          sample_rate: upload.sample_rate,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "data_ver,user_id",
-        }
-      )
+    // Atomically save only when the new replay is faster.
+    // The function inserts the first recording automatically.
+    const { data: saved, error: saveError } = await supabase.rpc(
+      "save_ghost_replay_if_faster",
+      {
+        p_data_ver: upload.data_ver,
+        p_user_id: upload.user_id,
+        p_player: upload.player,
+        p_time: upload.time,
+        p_replay_data: upload.replay_data,
+        p_avatar_data: upload.avatar_data,
+        p_sample_rate: upload.sample_rate,
+      }
+    )
 
     if (saveError) {
       throw saveError
     }
+
+    if (typeof saved !== "boolean") {
+      throw new Error("Unexpected replay save result")
+    }
+
+    if (!saved) {
+      console.log(
+        "[Ghost Upload] Existing Replay PB is faster or equal:",
+        upload.player,
+        upload.data_ver,
+        upload.time
+      )
+
+      return Response.json({
+        ok: true,
+        saved: false,
+        reason: "Existing replay is faster or equal",
+        data_ver: upload.data_ver,
+        time: upload.time,
+      })
+    }
+
+    console.log(
+      "[Ghost Upload] Replay PB saved:",
+      upload.player,
+      "Map:",
+      upload.data_ver,
+      "Time:",
+      upload.time
+    )
 
     return Response.json({
       ok: true,
@@ -167,13 +186,16 @@ export async function POST(request: Request) {
       data_ver: upload.data_ver,
       time: upload.time,
     })
+
   } catch (error) {
     console.error("[Ghost Upload]", error)
 
     return Response.json(
-      { ok: false, error: "Internal server error" },
+      {
+        ok: false,
+        error: "Internal server error",
+      },
       { status: 500 }
     )
   }
 }
-    
