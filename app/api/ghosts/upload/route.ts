@@ -62,12 +62,23 @@ function isValidUpload(value: unknown): value is GhostUpload {
 }
 
 export async function POST(request: Request) {
+  const startedAt = Date.now()
+
+  let uploadInfo: {
+    user_id?: number
+    player?: string
+    data_ver?: string
+    time?: number
+  } = {}
+
   try {
     // Authenticate the Roblox server.
     const authorization = request.headers.get("authorization")
     const uploadSecret = getRequiredEnv("GHOST_UPLOAD_SECRET")
 
     if (authorization !== `Bearer ${uploadSecret}`) {
+      console.warn("[Ghost Upload] REJECTED: Unauthorized request")
+
       return Response.json(
         {
           ok: false,
@@ -79,9 +90,15 @@ export async function POST(request: Request) {
 
     // Read the upload body.
     const rawBody = await request.text()
+    const bodyBytes = Buffer.byteLength(rawBody, "utf8")
 
     // Enforce maximum JSON request size.
-    if (Buffer.byteLength(rawBody, "utf8") > MAX_REPLAY_BYTES) {
+    if (bodyBytes > MAX_REPLAY_BYTES) {
+      console.warn("[Ghost Upload] REJECTED: Request too large", {
+        bytes: bodyBytes,
+        maximum: MAX_REPLAY_BYTES,
+      })
+
       return Response.json(
         {
           ok: false,
@@ -97,6 +114,10 @@ export async function POST(request: Request) {
     try {
       parsed = JSON.parse(rawBody)
     } catch {
+      console.warn("[Ghost Upload] REJECTED: Invalid JSON", {
+        bytes: bodyBytes,
+      })
+
       return Response.json(
         {
           ok: false,
@@ -106,8 +127,33 @@ export async function POST(request: Request) {
       )
     }
 
+    // Capture safe metadata for troubleshooting.
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const data = parsed as Record<string, unknown>
+
+      uploadInfo = {
+        user_id: typeof data.user_id === "number"
+          ? data.user_id
+          : undefined,
+        player: typeof data.player === "string"
+          ? data.player
+          : undefined,
+        data_ver: typeof data.data_ver === "string"
+          ? data.data_ver
+          : undefined,
+        time: typeof data.time === "number"
+          ? data.time
+          : undefined,
+      }
+    }
+
     // Validate metadata.
     if (!isValidUpload(parsed)) {
+      console.warn("[Ghost Upload] REJECTED: Invalid replay data", {
+        ...uploadInfo,
+        bytes: bodyBytes,
+      })
+
       return Response.json(
         {
           ok: false,
@@ -118,6 +164,14 @@ export async function POST(request: Request) {
     }
 
     const upload = parsed
+
+    console.log("[Ghost Upload] RECEIVED", {
+      player: upload.player,
+      user_id: upload.user_id,
+      map: upload.data_ver,
+      time: upload.time,
+      bytes: bodyBytes,
+    })
 
     // Connect to Supabase using the server-only key.
     const supabase = createClient(
@@ -147,20 +201,33 @@ export async function POST(request: Request) {
     )
 
     if (saveError) {
+      console.error("[Ghost Upload] SUPABASE ERROR", {
+        ...uploadInfo,
+        code: saveError.code,
+        message: saveError.message,
+        details: saveError.details,
+        hint: saveError.hint,
+      })
+
       throw saveError
     }
 
     if (typeof saved !== "boolean") {
+      console.error("[Ghost Upload] INVALID RPC RESULT", {
+        ...uploadInfo,
+        resultType: typeof saved,
+      })
+
       throw new Error("Unexpected replay save result")
     }
 
+    const durationMs = Date.now() - startedAt
+
     if (!saved) {
-      console.log(
-        "[Ghost Upload] Existing Replay PB is faster or equal:",
-        upload.player,
-        upload.data_ver,
-        upload.time
-      )
+      console.log("[Ghost Upload] SKIPPED: Existing replay faster or equal", {
+        ...uploadInfo,
+        durationMs,
+      })
 
       return Response.json({
         ok: true,
@@ -171,14 +238,10 @@ export async function POST(request: Request) {
       })
     }
 
-    console.log(
-      "[Ghost Upload] Replay PB saved:",
-      upload.player,
-      "Map:",
-      upload.data_ver,
-      "Time:",
-      upload.time
-    )
+    console.log("[Ghost Upload] SAVED", {
+      ...uploadInfo,
+      durationMs,
+    })
 
     return Response.json({
       ok: true,
@@ -188,7 +251,13 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error("[Ghost Upload]", error)
+    console.error("[Ghost Upload] FAILED", {
+      ...uploadInfo,
+      durationMs: Date.now() - startedAt,
+      error: error instanceof Error
+        ? error.message
+        : String(error),
+    })
 
     return Response.json(
       {

@@ -268,75 +268,87 @@ export default function PlayerProfilePage() {
     return pbs
   }, [runs, playerName, pbCategory, pbRankSort, pbDateSort])
 
-  const swiftMapPBs = useMemo(() => {
-    const pbs = swiftLeaderboards.map((leaderboard) => {
-      const playerRun =
-        leaderboard.entries.find(
-          (entry) =>
-            entry.player.trim().toLowerCase() === playerName.trim().toLowerCase()
-        ) ?? null
 
-      if (!playerRun) {
-        return {
-          map: leaderboard.map,
-          dataVer: leaderboard.dataVer,
-          rank: null,
-          timeText: null,
-          date: null,
-        }
-      }
+const swiftMapPBs = useMemo(() => {
+  const pbs = swiftLeaderboards.map((leaderboard) => {
+    const playerRun =
+      leaderboard.entries.find(
+        (entry) =>
+          entry.player.trim().toLowerCase() ===
+          playerName.trim().toLowerCase()
+      ) ?? null
 
+    if (!playerRun) {
       return {
         map: leaderboard.map,
         dataVer: leaderboard.dataVer,
-        rank: playerRun.rank,
-        timeText: playerRun.timeText,
-        date: playerRun.updatedAt ? playerRun.updatedAt.split("T")[0] : null,
+        rank: null,
+        timeText: null,
+        date: null,
       }
+    }
+
+    // Count only players with strictly faster times.
+    // Equal times receive the same rank.
+    const rank =
+      leaderboard.entries.filter(
+        (entry) => entry.timeMs < playerRun.timeMs
+      ).length + 1
+
+    return {
+      map: leaderboard.map,
+      dataVer: leaderboard.dataVer,
+      rank,
+      timeText: (playerRun.timeMs / 1000).toFixed(3),
+      date: playerRun.updatedAt
+        ? playerRun.updatedAt.split("T")[0]
+        : null,
+    }
+  })
+
+  if (pbRankSort === "asc") {
+    return [...pbs].sort((a, b) => {
+      if (a.rank === null && b.rank === null) return 0
+      if (a.rank === null) return 1
+      if (b.rank === null) return -1
+
+      return a.rank - b.rank
     })
+  }
 
-    if (pbRankSort === "asc") {
-      return [...pbs].sort((a, b) => {
-        if (a.rank === null && b.rank === null) return 0
-        if (a.rank === null) return 1
-        if (b.rank === null) return -1
+  if (pbRankSort === "desc") {
+    return [...pbs].sort((a, b) => {
+      if (a.rank === null && b.rank === null) return 0
+      if (a.rank === null) return 1
+      if (b.rank === null) return -1
 
-        return a.rank - b.rank
-      })
-    }
+      return b.rank - a.rank
+    })
+  }
 
-    if (pbRankSort === "desc") {
-      return [...pbs].sort((a, b) => {
-        if (a.rank === null && b.rank === null) return 0
-        if (a.rank === null) return 1
-        if (b.rank === null) return -1
+  if (pbDateSort === "asc") {
+    return [...pbs].sort((a, b) => {
+      if (a.date === null && b.date === null) return 0
+      if (a.date === null) return 1
+      if (b.date === null) return -1
 
-        return b.rank - a.rank
-      })
-    }
+      return new Date(a.date).getTime() - new Date(b.date).getTime()
+    })
+  }
 
-    if (pbDateSort === "asc") {
-      return [...pbs].sort((a, b) => {
-        if (a.date === null && b.date === null) return 0
-        if (a.date === null) return 1
-        if (b.date === null) return -1
+  if (pbDateSort === "desc") {
+    return [...pbs].sort((a, b) => {
+      if (a.date === null && b.date === null) return 0
+      if (a.date === null) return 1
+      if (b.date === null) return -1
 
-        return new Date(a.date).getTime() - new Date(b.date).getTime()
-      })
-    }
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
+  }
 
-    if (pbDateSort === "desc") {
-      return [...pbs].sort((a, b) => {
-        if (a.date === null && b.date === null) return 0
-        if (a.date === null) return 1
-        if (b.date === null) return -1
+  return pbs
+}, [swiftLeaderboards, playerName, pbRankSort, pbDateSort])
 
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
-      })
-    }
-
-    return pbs
-  }, [swiftLeaderboards, playerName, pbRankSort, pbDateSort])
 
   useEffect(() => {
     async function loadProfile() {
