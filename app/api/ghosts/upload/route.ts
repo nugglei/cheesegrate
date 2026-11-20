@@ -5,6 +5,7 @@ export const runtime = "nodejs"
 
 const MAX_REPLAY_BYTES = 750_000
 const MAX_RECORDING_MS = 60_000
+const MAX_SPEED = 10_000
 
 type GhostUpload = {
   user_id: number
@@ -14,6 +15,8 @@ type GhostUpload = {
   replay_data: string
   avatar_data: Record<string, unknown>
   sample_rate: number
+  mean_speed?: number
+  median_speed?: number
 }
 
 function getRequiredEnv(name: string): string {
@@ -26,12 +29,38 @@ function getRequiredEnv(name: string): string {
   return value
 }
 
+function isValidSpeed(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= MAX_SPEED
+  )
+}
+
 function isValidUpload(value: unknown): value is GhostUpload {
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false
   }
 
   const data = value as Record<string, unknown>
+
+  const hasMean = data.mean_speed !== undefined
+  const hasMedian = data.median_speed !== undefined
+
+  // Both statistics must be supplied together, or neither.
+  if (hasMean !== hasMedian) {
+    return false
+  }
+
+  if (hasMean) {
+    if (
+      !isValidSpeed(data.mean_speed) ||
+      !isValidSpeed(data.median_speed)
+    ) {
+      return false
+    }
+  }
 
   return (
     typeof data.user_id === "number" &&
@@ -147,7 +176,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Validate metadata.
+    // Validate metadata and optional speed statistics.
     if (!isValidUpload(parsed)) {
       console.warn("[Ghost Upload] REJECTED: Invalid replay data", {
         ...uploadInfo,
@@ -170,6 +199,8 @@ export async function POST(request: Request) {
       user_id: upload.user_id,
       map: upload.data_ver,
       time: upload.time,
+      mean_speed: upload.mean_speed ?? null,
+      median_speed: upload.median_speed ?? null,
       bytes: bodyBytes,
     })
 
@@ -187,6 +218,7 @@ export async function POST(request: Request) {
 
     // Atomically save only when the new replay is faster.
     // The function inserts the first recording automatically.
+    // The database function must accept these new parameters.
     const { data: saved, error: saveError } = await supabase.rpc(
       "save_ghost_replay_if_faster",
       {
@@ -197,6 +229,8 @@ export async function POST(request: Request) {
         p_replay_data: upload.replay_data,
         p_avatar_data: upload.avatar_data,
         p_sample_rate: upload.sample_rate,
+        p_mean_speed: upload.mean_speed ?? null,
+        p_median_speed: upload.median_speed ?? null,
       }
     )
 
@@ -240,6 +274,8 @@ export async function POST(request: Request) {
 
     console.log("[Ghost Upload] SAVED", {
       ...uploadInfo,
+      mean_speed: upload.mean_speed ?? null,
+      median_speed: upload.median_speed ?? null,
       durationMs,
     })
 
